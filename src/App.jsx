@@ -22,6 +22,7 @@ import About from "./pages/About"
 import Catalog from "./pages/Catalog"
 import Contact from "./pages/Contact"
 import CourseDetails from "./pages/CourseDetails"
+import CourseAI from "./pages/CourseAI"
 import Dashboard from "./pages/Dashboard"
 import Error from "./pages/Error"
 import ForgotPassword from "./pages/ForgotPassword"
@@ -56,6 +57,14 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="courses/:courseId" element={<CourseDetails />} />
+        <Route
+          path="courses/:courseId/ai"
+          element={
+            <PrivateRoute>
+              <CourseAI />
+            </PrivateRoute>
+          }
+        />
         <Route path="catalog/:catalogName" element={<Catalog />} />
         {/* Open Route - for Only Non Logged in User */}
         <Route

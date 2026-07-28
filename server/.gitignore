@@ -1,3 +1,4 @@
 node_modules
 .env
 package-lock.json
+ai_test_info.json

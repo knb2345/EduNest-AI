@@ -168,6 +168,14 @@ function CourseDetails() {
                   {" "}
                   <HiOutlineGlobeAlt /> English
                 </p>
+                {course_id && (
+                  <button
+                    className="blackButton ml-4"
+                    onClick={() => navigate(`/courses/${course_id}/ai`)}
+                  >
+                    AI Tutor
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex w-full flex-col gap-4 border-y border-y-richblack-500 py-4 lg:hidden">

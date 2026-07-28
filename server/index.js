@@ -6,6 +6,7 @@ const profileRoutes = require("./routes/profile");
 const courseRoutes = require("./routes/Course");
 const paymentRoutes = require("./routes/Payments");
 const contactUsRoute = require("./routes/Contact");
+const aiRoutes = require("./routes/aiTutor");
 const database = require("./config/database");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
@@ -25,7 +26,7 @@ const PORT = process.env.PORT || 4000;
 database.connect();
  
 // Middlewares
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(
 	cors({
@@ -35,9 +36,10 @@ app.use(
 );
 app.use(
 	fileUpload({
-		useTempFiles: true,
-		tempFileDir: "/tmp/",
-	})
+			useTempFiles: false,
+			// keep uploads in memory for dev; use temp files in production if needed
+			limits: { fileSize: parseInt(process.env.AI_MAX_UPLOAD_BYTES || `${10 * 1024 * 1024}`) },
+		})
 );
 
 // Connecting to cloudinary
@@ -49,6 +51,7 @@ app.use("/api/v1/profile", profileRoutes);
 app.use("/api/v1/course", courseRoutes);
 app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/reach", contactUsRoute);
+app.use("/api/v1/ai", aiRoutes);
 
 // Testing the server
 app.get("/", (req, res) => {

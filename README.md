@@ -1,29 +1,28 @@
-<<<<<<< HEAD
-# StudyNotion Edtech Project
-=======
-# StudyNotion-EdTech
-Full Stack EdTech platform using MERN stack
->>>>>>> 751135cacc979c8ffdbb7c75b78e66c7dbfbc596
+## EduNest AI
 
--Full-Stack MERN Web
--Tailwind Used
+EduNest AI is a full-stack adaptive learning platform built by extending a MERN learning-management foundation with course-grounded AI tutoring, document ingestion, retrieval, citations, and adaptive assessments.
 
-Usage
-To run this web on your computer, follow these steps:
+Quick start
 
-Clone the repository to your local machine.
+1. Clone the repository:
 
-git clone https://github.com/AyushR97j/StudyNotion-EdTech.git
-Install the required packages. 
+	git clone https://github.com/AyushR97j/StudyNotion-EdTech.git
 
-cd StudyNotion-EdTech
-npm install
-Start the development server:
+2. Install dependencies (root and server):
 
-npm run dev
-Open the project in your browser at http://localhost:3000 to view your project.
+	npm install
+	cd server && npm install
 
--Build this project in Love Babbar's Dot Batch.
+3. Start the development servers (root):
 
-Contributing
-Contributions are welcome! If you have any suggestions or find any issues, please feel free to open an issue or a pull request.
+	npm start          # starts the React dev server
+	npm run server     # starts the backend (or run server/devStart.js for in-memory dev)
+
+4. Open the app at http://localhost:3000
+
+Notes
+
+- This repository is an extension of an existing MERN LMS baseline (StudyNotion). It adds an AI Tutor vertical slice for course-specific PDF ingestion, chunking, retrieval, and source-cited answers.
+- Do not store production secrets in the repo; use `.env` and `.env.example`.
+
+If you contributed or spotted an issue, open a PR or issue on the upstream repository.

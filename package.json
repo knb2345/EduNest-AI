@@ -1,6 +1,6 @@
 {
   "name": "studynotion-client",
-  "description": "This is the client side of the StudyNotion App",
+  "description": "EduNest AI client: adaptive learning with course-grounded AI tutoring",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
