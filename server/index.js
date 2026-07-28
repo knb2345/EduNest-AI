@@ -1,3 +1,7 @@
+// Load backend environment variables before importing routes and providers.
+// When started from the server directory, dotenv reads server/.env.
+require("dotenv").config();
+
 // Importing necessary modules and packages
 const express = require("express");
 const app = express();
@@ -12,10 +16,6 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const { cloudinaryConnect } = require("./config/cloudinary");
 const fileUpload = require("express-fileupload");
-const dotenv = require("dotenv");
-
-// Loading environment variables from .env file
-dotenv.config();
 
 // Setting up port number
 const PORT = process.env.PORT || 4000;

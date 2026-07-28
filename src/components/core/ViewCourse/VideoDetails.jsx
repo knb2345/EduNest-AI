@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate, useParams } from "react-router-dom"
+import { AiOutlineRobot } from "react-icons/ai"
 
 import "video-react/dist/video-react.css"
 import { useLocation } from "react-router-dom"
@@ -170,6 +171,18 @@ const VideoDetails = () => {
 
   return (
     <div className="flex flex-col gap-5 text-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-richblack-700 bg-richblack-800 px-4 py-3">
+        <div>
+          <p className="text-sm uppercase tracking-[0.2em] text-richblack-300">Course Assistant</p>
+          <h2 className="text-xl font-semibold text-richblack-5">Use AI Tutor for this course</h2>
+        </div>
+        <button
+          className="blackButton flex items-center gap-2"
+          onClick={() => navigate(`/courses/${courseId}/ai`)}
+        >
+          <AiOutlineRobot /> AI Tutor
+        </button>
+      </div>
       {!videoData ? (
         <img
           src={previewSource}

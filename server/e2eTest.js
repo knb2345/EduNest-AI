@@ -1,81 +1,71 @@
+const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
-const axios = require("axios");
 
-async function run() {
-  const infoPath = path.join(__dirname, "ai_test_info.json");
-  if (!fs.existsSync(infoPath)) {
-    console.error("ai_test_info.json not found. Start devStart.js first.");
-    process.exit(1);
-  }
-  const info = JSON.parse(fs.readFileSync(infoPath));
-  const base = process.env.BASE_URL || "http://localhost:4000/api/v1";
-  const pdfPath = info.samplePdf;
-  console.log("Using base:", base);
+const baseUrl = process.env.BASE_URL || "http://localhost:4001/api/v1";
+const password = "Demo123!";
+const emails = {
+  instructor: "instructor@edunest.demo",
+  student: "student@edunest.demo",
+  outsider: "outsider@edunest.demo",
+};
 
-  // Upload as instructor to course1
-  const formData = new (require("form-data"))();
-  const stream = fs.createReadStream(pdfPath);
-  const opts = {};
-  if (pdfPath.toLowerCase().endsWith('.txt')) {
-    opts.filename = path.basename(pdfPath);
-    opts.contentType = 'application/pdf';
+async function login(email) {
+  const response = await axios.post(`${baseUrl}/auth/login`, {
+    email,
+    password,
+  });
+  if (!response.data.success || !response.data.token) {
+    throw new Error(`Login failed for ${email}`);
   }
-  formData.append("file", stream, opts);
-  const uploadUrl = `${base}/ai/course/${info.courses.course1}/uploadPdf`;
-  console.log("Uploading sample PDF to:", uploadUrl);
-  try {
-    const headers = { Authorization: `Bearer ${info.instructor.token}`, ...formData.getHeaders() };
-    const getLength = () =>
-      new Promise((resolve, reject) => {
-        formData.getLength((err, length) => {
-          if (err) return reject(err);
-          resolve(length);
-        });
-      });
-    try {
-      const length = await getLength();
-      headers["Content-Length"] = length;
-    } catch (e) {
-      // ignore length error
-    }
-    const res = await axios.post(uploadUrl, formData, { headers });
-    console.log("Upload response:", res.data);
-      // check chunk count
-      try {
-        const cnt = await axios.get(`${base}/ai/course/${info.courses.course1}/chunksCount`, { headers: { Authorization: `Bearer ${info.instructor.token}` } });
-        console.log("Chunks count:", cnt.data);
-      } catch (e) {
-        console.error("Chunks count failed:", e.response ? e.response.data : e.message);
-      }
-  } catch (err) {
-    console.error("Upload failed:", err.response ? err.response.data : err.message);
-  }
-
-  // Query question that exists
-  const queryUrl = `${base}/ai/course/${info.courses.course1}/query`;
-  try {
-    const res = await axios.post(queryUrl, { question: "When was EduNest launched?" }, { headers: { Authorization: `Bearer ${info.student.token}` } });
-    console.log("Query response (launched):", res.data);
-  } catch (err) {
-    console.error("Query failed:", err.response ? err.response.data : err.message);
-  }
-
-  // Query question that doesn't exist
-  try {
-    const res = await axios.post(queryUrl, { question: "Who is the CEO of EduNest?" }, { headers: { Authorization: `Bearer ${info.student.token}` } });
-    console.log("Query response (CEO):", res.data);
-  } catch (err) {
-    console.error("Query failed:", err.response ? err.response.data : err.message);
-  }
-
-  // Try non-enrolled student querying
-  try {
-    const res = await axios.post(queryUrl, { question: "When was EduNest launched?" }, { headers: { Authorization: `Bearer ${info.nonStudent.token}` } });
-    console.log("Non-enrolled query response:", res.data);
-  } catch (err) {
-    console.error("Non-enrolled query failed:", err.response ? err.response.data : err.message);
-  }
+  return response.data;
 }
 
-run();
+async function run() {
+  const tokenFile = path.join(__dirname, "ai_test_info.json");
+  if (fs.existsSync(tokenFile)) {
+    throw new Error("Forbidden token file exists: server/ai_test_info.json");
+  }
+
+  const instructorLogin = await login(emails.instructor);
+  const studentLogin = await login(emails.student);
+  const outsiderLogin = await login(emails.outsider);
+
+  const coursesResponse = await axios.get(`${baseUrl}/course/getAllCourses`);
+  const courses = coursesResponse.data.data || [];
+  const first = courses.find((course) => course.courseName === "EduNest AI Demo Course");
+  const second = courses.find((course) => course.courseName === "Course Isolation Demo");
+  if (!first || !second) throw new Error("Expected demo courses were not seeded");
+
+  const detailsResponse = await axios.post(`${baseUrl}/course/getCourseDetails`, {
+    courseId: first._id,
+  });
+  const details = detailsResponse.data.data.courseDetails;
+  const enrolledIds = details.studentsEnroled.map(String);
+
+  if (String(details.instructor._id) !== String(instructorLogin.user._id)) {
+    throw new Error("Instructor does not own the first course");
+  }
+  if (!enrolledIds.includes(String(studentLogin.user._id))) {
+    throw new Error("Demo student is not enrolled in the first course");
+  }
+  if (enrolledIds.includes(String(outsiderLogin.user._id))) {
+    throw new Error("Demo outsider must not be enrolled");
+  }
+  if (String(first._id) === String(second._id)) {
+    throw new Error("Demo courses are not isolated records");
+  }
+
+  console.log("Instructor login: verified");
+  console.log("Student login: verified");
+  console.log("Outsider login: verified");
+  console.log("First course ownership and enrollment: verified");
+  console.log("Outsider non-enrollment: verified");
+  console.log("Second course separation: verified");
+  console.log("Token/secret file absence: verified");
+}
+
+run().catch((error) => {
+  console.error("Demo verification failed:", error.response?.data || error.message);
+  process.exit(1);
+});

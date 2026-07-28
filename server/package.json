@@ -5,7 +5,9 @@
 	"main": "index.js",
 	"scripts": {
 		"start": "node index.js",
-		"dev": "nodemon index.js"
+		"dev": "nodemon index.js",
+		"demo": "node devStart.js",
+		"demo:verify": "node e2eTest.js"
 	},
 	"keywords": [
 		"studynotion-backend"

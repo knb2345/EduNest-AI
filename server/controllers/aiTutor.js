@@ -167,7 +167,14 @@ exports.queryCourse = async (req, res) => {
       return res.status(200).json({ success: true, mode: "llm", answer, citations });
     } catch (err) {
       console.error("LLM provider error:", err.message);
-      return res.status(500).json({ success: false, message: "LLM provider error" });
+      const previews = top.map((t) => ({ text: t.text, docName: t.docName, pageNumber: t.pageNumber, score: t.score }));
+      return res.status(200).json({
+        success: true,
+        mode: "source_preview",
+        fallback: "llm_error",
+        previews,
+        citations,
+      });
     }
   } catch (error) {
     console.error(error);

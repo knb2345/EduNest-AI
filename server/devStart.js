@@ -1,118 +1,150 @@
 const { MongoMemoryServer } = require("mongodb-memory-server");
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 const fs = require("fs");
 const path = require("path");
 
-(async () => {
+const DEMO_PASSWORD = "Demo123!";
+const DEMO_USERS = [
+  {
+    firstName: "Demo",
+    lastName: "Instructor",
+    email: "instructor@edunest.demo",
+    accountType: "Instructor",
+    about: "Development-only EduNest instructor",
+  },
+  {
+    firstName: "Demo",
+    lastName: "Student",
+    email: "student@edunest.demo",
+    accountType: "Student",
+    about: "Development-only enrolled student",
+  },
+  {
+    firstName: "Demo",
+    lastName: "Outsider",
+    email: "outsider@edunest.demo",
+    accountType: "Student",
+    about: "Development-only non-enrolled student",
+  },
+];
+
+async function createSamplePdf() {
+  const PDFDocument = require("pdfkit");
+  const sampleDir = path.join(__dirname, "../sample");
+  fs.mkdirSync(sampleDir, { recursive: true });
+
+  const samplePath = path.join(sampleDir, "edunest_sample.pdf");
+  const document = new PDFDocument();
+  const stream = fs.createWriteStream(samplePath);
+  document.pipe(stream);
+  document.fontSize(12).text("EduNest AI was launched in 2025.");
+  document.moveDown();
+  document.text("The demo course contains six learning modules.");
+  document.moveDown();
+  document.text("The final assessment requires a score of 70 percent.");
+  document.end();
+
+  await new Promise((resolve, reject) => {
+    stream.on("close", resolve);
+    stream.on("error", reject);
+  });
+}
+
+async function seedDemoData() {
+  const Profile = require("./models/Profile");
+  const User = require("./models/User");
+  const Course = require("./models/Course");
+  const hashedPassword = await bcrypt.hash(DEMO_PASSWORD, 10);
+
+  const users = [];
+  for (const demoUser of DEMO_USERS) {
+    const profile = await Profile.create({ about: demoUser.about });
+    users.push(
+      await User.create({
+        firstName: demoUser.firstName,
+        lastName: demoUser.lastName,
+        email: demoUser.email,
+        password: hashedPassword,
+        accountType: demoUser.accountType,
+        approved: true,
+        additionalDetails: profile._id,
+        image: "",
+      })
+    );
+  }
+
+  const [instructor, student] = users;
+  const courseOne = await Course.create({
+    courseName: "EduNest AI Demo Course",
+    courseDescription: "Course-grounded AI Tutor demonstration",
+    whatYouWillLearn: "Upload the included sample PDF and ask grounded questions.",
+    instructor: instructor._id,
+    price: 0,
+    thumbnail: "",
+    tag: ["demo", "ai-tutor"],
+    studentsEnroled: [student._id],
+    instructions: ["Use only the uploaded course document as evidence."],
+    status: "Published",
+  });
+  const courseTwo = await Course.create({
+    courseName: "Course Isolation Demo",
+    courseDescription: "Separate course for verifying retrieval isolation",
+    whatYouWillLearn: "Course-scoped retrieval keeps documents isolated.",
+    instructor: instructor._id,
+    price: 0,
+    thumbnail: "",
+    tag: ["demo", "isolation"],
+    studentsEnroled: [],
+    instructions: ["Keep this course separate from the first demo course."],
+    status: "Published",
+  });
+
+  instructor.courses = [courseOne._id, courseTwo._id];
+  student.courses = [courseOne._id];
+  await Promise.all([instructor.save(), student.save()]);
+
+  console.log("");
+  console.log("Development-only demo credentials");
+  for (const demoUser of DEMO_USERS) {
+    console.log(`${demoUser.email} / ${DEMO_PASSWORD}`);
+  }
+  console.log(`EduNest AI Demo Course ID: ${courseOne._id}`);
+  console.log(`Course Isolation Demo ID: ${courseTwo._id}`);
+}
+
+async function startDemo() {
+  let mongod;
   try {
-    console.log("Starting in-memory MongoDB for dev...");
-    const mongod = await MongoMemoryServer.create();
-    const uri = mongod.getUri();
-    process.env.MONGODB_URL = uri;
-    process.env.JWT_SECRET = process.env.JWT_SECRET || "dev_jwt_secret";
-    console.log("MONGODB_URL set to in-memory server.");
+    mongod = await MongoMemoryServer.create();
+    process.env.MONGODB_URL = mongod.getUri();
+    process.env.JWT_SECRET = "edunest-development-demo-secret";
+    process.env.PORT = process.env.PORT || "4000";
+    process.env.OPENAI_API_KEY = "";
 
-    // create sample PDF
-    const PDFDocument = require("pdfkit");
-    const sampleDir = path.join(__dirname, "../sample");
-    if (!fs.existsSync(sampleDir)) fs.mkdirSync(sampleDir);
-    const samplePath = path.join(sampleDir, "edunest_sample.pdf");
-    const doc = new PDFDocument();
-    const stream = fs.createWriteStream(samplePath);
-    doc.pipe(stream);
-    doc.fontSize(12).text("EduNest was launched in 2025.", { align: "left" });
-    doc.moveDown();
-    doc.text("The course contains six modules.");
-    doc.moveDown();
-    doc.text("The final assessment requires a score of 70 percent.");
-    doc.end();
-    await new Promise((r) => stream.on("close", r));
-    console.log("Sample PDF written to:", samplePath);
+    await createSamplePdf();
 
-    // start the app
+    mongoose.connection.once("open", () => {
+      seedDemoData().catch((error) => {
+        console.error("Demo seed failed:", error.message);
+        process.exitCode = 1;
+      });
+    });
+
     require("./index.js");
 
-    // wait for mongoose connection
-    mongoose.connection.on("connected", async () => {
-      console.log("Mongoose connected to in-memory server.");
-      // seed minimal data
-      try {
-        const Profile = require("./models/Profile");
-        const User = require("./models/User");
-        const Course = require("./models/Course");
-        const jwt = require("jsonwebtoken");
-
-        // create profiles
-        const p1 = await Profile.create({ about: "Instructor profile" });
-        const p2 = await Profile.create({ about: "Enrolled student" });
-        const p3 = await Profile.create({ about: "Non-enrolled student" });
-
-        // create users
-        const instr = await User.create({
-          firstName: "Dev",
-          lastName: "Instructor",
-          email: "instructor@dev.local",
-          password: "password",
-          accountType: "Instructor",
-          additionalDetails: p1._id,
-        });
-        const student = await User.create({
-          firstName: "Enrolled",
-          lastName: "Student",
-          email: "student@dev.local",
-          password: "password",
-          accountType: "Student",
-          additionalDetails: p2._id,
-        });
-        const nonStudent = await User.create({
-          firstName: "Non",
-          lastName: "Student",
-          email: "nonstudent@dev.local",
-          password: "password",
-          accountType: "Student",
-          additionalDetails: p3._id,
-        });
-
-        const course1 = await Course.create({
-          courseName: "Sample Course A",
-          courseDescription: "A sample course",
-          instructor: instr._id,
-          tag: ["dev"],
-          studentsEnroled: [student._id],
-          status: "Published",
-        });
-
-        const course2 = await Course.create({
-          courseName: "Sample Course B",
-          courseDescription: "Another course",
-          instructor: instr._id,
-          tag: ["dev"],
-          studentsEnroled: [],
-          status: "Published",
-        });
-
-        const jwtSecret = process.env.JWT_SECRET;
-        const instrToken = jwt.sign({ id: instr._id, email: instr.email }, jwtSecret);
-        const studentToken = jwt.sign({ id: student._id, email: student.email }, jwtSecret);
-        const nonStudentToken = jwt.sign({ id: nonStudent._id, email: nonStudent.email }, jwtSecret);
-
-        const out = {
-          samplePdf: samplePath,
-          instructor: { email: instr.email, token: instrToken },
-          student: { email: student.email, token: studentToken },
-          nonStudent: { email: nonStudent.email, token: nonStudentToken },
-          courses: { course1: course1._id.toString(), course2: course2._id.toString() },
-        };
-        const outPath = path.join(__dirname, "ai_test_info.json");
-        fs.writeFileSync(outPath, JSON.stringify(out, null, 2));
-        console.log("Seeded dev data written to:", outPath);
-        console.log(JSON.stringify(out, null, 2));
-      } catch (err) {
-        console.error("Seeding error:", err);
-      }
-    });
-  } catch (err) {
-    console.error(err);
+    const shutdown = async () => {
+      await mongoose.disconnect();
+      await mongod.stop();
+      process.exit(0);
+    };
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+  } catch (error) {
+    console.error("Demo startup failed:", error.message);
+    if (mongod) await mongod.stop();
     process.exit(1);
   }
-})();
+}
+
+startDemo();

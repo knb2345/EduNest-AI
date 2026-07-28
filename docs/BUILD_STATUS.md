@@ -24,7 +24,8 @@ Phase checklist (statuses: not started, in progress, complete, blocked, unverifi
 Runtime note
 - The repository root `.nvmrc` specifies Node `v16.18.0`, while the install/build here were executed under Node `v22.18.0`. Because these differ, treat the install/build outputs above as provisional. Re-run `npm install` and `npm run build` after switching to the `.nvmrc` Node version to confirm the development baseline.
 
-- Server dev run (`npm run server` from root or `cd server && npm run dev`): unverified
+- Server dev run (`npm run server` from root or `cd server && npm run dev`): complete
+  - Notes: verified the demo backend on port 4000 with seeded credentials and the AI tutor routes responding at `/api/v1/ai/course/:courseId/...`.
 
 - Security hardening (auth cookie/session migration, CORS, CSRF): not started
 

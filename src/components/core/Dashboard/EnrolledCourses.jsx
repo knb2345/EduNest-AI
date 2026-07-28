@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import ProgressBar from "@ramonak/react-progress-bar"
+import { AiOutlineRobot } from "react-icons/ai"
 import { BiDotsVerticalRounded } from "react-icons/bi"
 import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
@@ -90,6 +91,14 @@ export default function EnrolledCourses() {
                   height="8px"
                   isLabelVisible={false}
                 />
+              </div>
+              <div className="flex w-[15%] justify-end px-4 py-3">
+                <button
+                  className="blackButton flex items-center gap-2 text-sm"
+                  onClick={() => navigate(`/courses/${course._id}/ai`)}
+                >
+                  <AiOutlineRobot /> AI Tutor
+                </button>
               </div>
             </div>
           ))}
