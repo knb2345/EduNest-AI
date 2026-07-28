@@ -158,7 +158,13 @@ exports.queryCourse = async (req, res) => {
     if (!process.env.OPENAI_API_KEY) {
       // source-preview mode: return best excerpts and citations but not pretend to be AI
       const previews = top.map((t) => ({ text: t.text, docName: t.docName, pageNumber: t.pageNumber, score: t.score }));
-      return res.status(200).json({ success: true, mode: "source_preview", previews, citations });
+      return res.status(200).json({
+        success: true,
+        mode: "source_preview",
+        fallback: "no_api_key",
+        previews,
+        citations,
+      });
     }
 
     // LLM key present: generate answer strictly from retrieved evidence

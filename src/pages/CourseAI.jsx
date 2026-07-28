@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { apiConnector } from "../services/apiConnector";
 
 const BASE_URL =
-  process.env.REACT_APP_BASE_URL || "http://localhost:4000/api/v1";
+  process.env.REACT_APP_BASE_URL || "http://localhost:4001/api/v1";
 
 function CourseAI() {
   const { courseId } = useParams();
@@ -60,19 +60,38 @@ function CourseAI() {
         setLastMode(res.data.mode);
         if (res.data.mode === "llm") {
           const answerText = res.data.answer?.text || res.data.answer || "";
-          setMessages((m) => [...m, { role: "assistant", kind: "answer", text: answerText, citations: res.data.citations }]);
-          setStatus({ type: "success", text: "AI-generated answer returned from retrieved course chunks." });
+          setMessages((m) => [...m, {
+            role: "assistant",
+            label: "AI answer grounded in course material",
+            text: answerText,
+            citations: res.data.citations,
+          }]);
+          setStatus({ type: "success", text: "AI answer grounded in course material." });
         } else if (res.data.mode === "source_preview") {
           const previewText = (res.data.previews || [])
             .map((p) => `(${p.docName}:${p.pageNumber}) ${p.text}`)
             .join("\n---\n");
-          setMessages((m) => [...m, { role: "assistant", kind: "preview", text: previewText, citations: res.data.citations }]);
+          const previewLabel =
+            res.data.fallback === "llm_error"
+              ? "Source preview — AI request failed"
+              : "Source preview — no AI key configured";
+          setMessages((m) => [...m, {
+            role: "assistant",
+            label: previewLabel,
+            text: previewText,
+            citations: res.data.citations,
+          }]);
           setStatus({
             type: "success",
-            text: res.data.fallback === "llm_error" ? "LLM failed, showing source preview from course chunks." : "Source-preview mode from retrieved course chunks.",
+            text: `${previewLabel}.`,
           });
         } else {
-          setMessages((m) => [...m, { role: "assistant", kind: "evidence", text: "Insufficient evidence in course materials.", citations: [] }]);
+          setMessages((m) => [...m, {
+            role: "assistant",
+            label: "Insufficient evidence",
+            text: "Insufficient evidence in course materials.",
+            citations: [],
+          }]);
           setStatus({ type: "warning", text: "Insufficient evidence in the uploaded course material." });
         }
       }
@@ -174,9 +193,9 @@ function CourseAI() {
                 <div key={idx} className="rounded-xl border border-richblack-700 bg-richblack-800 p-4">
                   <div className="mb-2 flex items-center justify-between gap-3">
                     <span className="text-sm font-semibold uppercase tracking-[0.18em] text-yellow-25">{m.role}</span>
-                    {m.kind && (
+                    {m.label && (
                       <span className="rounded-full border border-richblack-600 px-3 py-1 text-xs text-richblack-200">
-                        {m.kind === "answer" ? "AI-generated answer" : m.kind === "preview" ? "Source preview" : "Insufficient evidence"}
+                        {m.label}
                       </span>
                     )}
                   </div>

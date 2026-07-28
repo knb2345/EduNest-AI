@@ -1,14 +1,13 @@
 const axios = require("axios");
 
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
-
 async function generateEmbedding(text) {
-  if (!OPENAI_KEY) return null;
+  const openAIKey = process.env.OPENAI_API_KEY;
+  if (!openAIKey) return null;
   try {
     const resp = await axios.post(
       "https://api.openai.com/v1/embeddings",
       { input: text, model: process.env.EMBEDDING_MODEL || "text-embedding-3-small" },
-      { headers: { Authorization: `Bearer ${OPENAI_KEY}` } }
+      { headers: { Authorization: `Bearer ${openAIKey}` } }
     );
     return resp.data.data[0].embedding;
   } catch (err) {

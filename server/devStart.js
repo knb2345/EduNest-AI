@@ -4,6 +4,10 @@ const bcrypt = require("bcrypt");
 const fs = require("fs");
 const path = require("path");
 
+// Demo mode may use an explicitly configured server-side AI key, but never
+// supplies one of its own.
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+
 const DEMO_PASSWORD = "Demo123!";
 const DEMO_USERS = [
   {
@@ -119,8 +123,7 @@ async function startDemo() {
     mongod = await MongoMemoryServer.create();
     process.env.MONGODB_URL = mongod.getUri();
     process.env.JWT_SECRET = "edunest-development-demo-secret";
-    process.env.PORT = process.env.PORT || "4000";
-    process.env.OPENAI_API_KEY = "";
+    process.env.PORT = "4001";
 
     await createSamplePdf();
 

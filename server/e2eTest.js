@@ -1,6 +1,9 @@
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
+const FormData = require("form-data");
+
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 const baseUrl = process.env.BASE_URL || "http://localhost:4001/api/v1";
 const password = "Demo123!";
@@ -56,6 +59,54 @@ async function run() {
     throw new Error("Demo courses are not isolated records");
   }
 
+  const form = new FormData();
+  form.append(
+    "file",
+    fs.createReadStream(path.join(__dirname, "../sample/edunest_sample.pdf"))
+  );
+  const uploadResponse = await axios.post(
+    `${baseUrl}/ai/course/${first._id}/uploadPdf`,
+    form,
+    {
+      headers: {
+        ...form.getHeaders(),
+        Authorization: `Bearer ${instructorLogin.token}`,
+      },
+    }
+  );
+  if (!uploadResponse.data.success) {
+    throw new Error("Demo PDF upload failed");
+  }
+
+  const supportedResponse = await axios.post(
+    `${baseUrl}/ai/course/${first._id}/query`,
+    { question: "When was EduNest AI launched?" },
+    { headers: { Authorization: `Bearer ${studentLogin.token}` } }
+  );
+  const supported = supportedResponse.data;
+  if (process.env.OPENAI_API_KEY) {
+    if (supported.mode !== "llm") {
+      throw new Error(`Expected LLM mode, received ${supported.mode}`);
+    }
+  } else if (
+    supported.mode !== "source_preview" ||
+    supported.fallback !== "no_api_key"
+  ) {
+    throw new Error("Expected no-key source-preview mode");
+  }
+  if (!supported.citations?.length) {
+    throw new Error("Supported answer did not include citations");
+  }
+
+  const unsupportedResponse = await axios.post(
+    `${baseUrl}/ai/course/${first._id}/query`,
+    { question: "Who is the chief executive officer of Acme Robotics?" },
+    { headers: { Authorization: `Bearer ${studentLogin.token}` } }
+  );
+  if (unsupportedResponse.data.mode !== "insufficient_evidence") {
+    throw new Error("Unsupported question did not return insufficient evidence");
+  }
+
   console.log("Instructor login: verified");
   console.log("Student login: verified");
   console.log("Outsider login: verified");
@@ -63,6 +114,12 @@ async function run() {
   console.log("Outsider non-enrollment: verified");
   console.log("Second course separation: verified");
   console.log("Token/secret file absence: verified");
+  console.log(
+    process.env.OPENAI_API_KEY
+      ? "Grounded LLM answer with citations: verified"
+      : "No-key source preview with citations: verified"
+  );
+  console.log("Unsupported question abstention: verified");
 }
 
 run().catch((error) => {
