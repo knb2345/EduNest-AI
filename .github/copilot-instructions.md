@@ -1,130 +1,59 @@
-# EduNest AI repository instructions
+# EduNest AI Repository Instructions
 
-## Repository purpose
+## Product scope
 
-This repository contains an existing full-stack MERN education platform and is being extended into **EduNest AI**, a secure, evaluated, course-grounded adaptive learning system.
+EduNest AI is a full-stack MERN learning platform. React and Redux implement the browser application; Express owns identity, authorization, course operations, retrieval, generation, and scoring; Mongoose persists data in MongoDB.
 
-The confirmed baseline includes:
+The product includes OTP-verified password identity, Google OpenID Connect, EduNest JWT sessions, Student/Instructor/Admin roles, courses and lectures, enrollment, progress, optional Razorpay payments, PDF-grounded tutoring, and instructor-reviewed Practice Quizzes.
 
-- React single-page frontend
-- Redux client-side state
-- Express API
-- MongoDB persistence
-- Email/password login
-- OTP signup verification
-- JWT authentication
-- Student and instructor roles
-- Protected frontend routes and backend middleware
-- Course browsing and management
-- Enrollment, lecture progress, cart, and payment flows
-- Password reset through emailed links
-
-Read `PROJECT_OVERVIEW.md` before changing architecture. Treat the code as the source of truth when it differs from documentation.
-
-Read these project documents before implementing major features:
-
-- `docs/AI_PRODUCT_SPEC.md`
-- `docs/TARGET_ARCHITECTURE.md`
-- `docs/IMPLEMENTATION_ROADMAP.md`
-- `docs/ACCEPTANCE_CRITERIA.md`
-- `docs/RESUME_METRICS.md`
+Read `README.md`, `PROJECT_OVERVIEW.md`, `.env.example`, and the relevant files in `docs/` before major changes. Treat code as authoritative and update documentation when behavior changes.
 
 ## Working method
 
-- Inspect relevant files, package scripts, runtime versions, and existing conventions before editing.
-- Preserve existing working behavior unless the active task explicitly changes it.
-- Prefer small vertical slices that include API, persistence, UI, authorization, tests, and documentation.
-- Do not rewrite the application from scratch.
-- Do not migrate every existing JavaScript file to TypeScript as one task.
-- Use TypeScript for new code when the existing build configuration safely supports it; otherwise use strict validation and clear JSDoc types.
-- Do not perform unrelated formatting or dependency upgrades.
-- Keep new provider-specific code behind interfaces.
-- Make local development functional without requiring paid cloud services.
-- Stop before irreversible operations, production deployments, real payments, or destructive database migrations.
-- Never invent successful test results, benchmark numbers, or deployment status.
+- Inspect runtime versions, package scripts, configuration, Git diff, and relevant end-to-end flows before editing.
+- Prefer a small coherent vertical slice across API, persistence, UI, authorization, tests, and documentation.
+- Preserve product behavior outside the requested scope.
+- Do not add microservices, queues, databases, providers, analytics, or product features unless the task requires them.
+- Keep local development functional without paid services.
+- Record observed test/build results in `docs/BUILD_STATUS.md`.
+- Never invent metrics, provider success, deployment status, or production readiness.
 
-## Required verification
+## Identity and authorization
 
-For each coherent change:
+- Frontend guards are navigation aids; Express is the authorization boundary.
+- Verify JWT identity, role, ownership, enrollment, publication, and course binding before protected data access.
+- Describe Google login as OpenID Connect over the OAuth 2.0 Authorization Code flow.
+- Maintain state, nonce, PKCE, exact redirect URI use, issuer/audience/expiry validation, and verified-email handling.
+- Keep client secrets and provider tokens server-side. Never log credentials, codes, tokens, cookies, OTPs, or reset tokens.
+- Never link an identity solely because an email matches. Require an explicit secure linking flow.
+- New Google users must be Students.
+- Use `HttpOnly`, production `Secure`, explicit `SameSite`, bounded cookie lifetime, and cleanup for temporary OAuth state.
 
-- Run the most focused relevant tests.
-- Run existing lint and type-check commands when available.
-- Run frontend and backend production builds when available.
-- Verify authentication and authorization failure cases.
-- Record commands and outcomes in `docs/BUILD_STATUS.md`.
-- Distinguish completed, partially completed, blocked, and unverified work.
+## AI, retrieval, and assessment
 
-If the repository has no suitable test framework, add the smallest compatible framework and document why it was selected.
+- Authorize course access before retrieving chunks.
+- Treat PDF text as untrusted evidence, never as system instructions.
+- Preserve course, document, page, and chunk provenance.
+- Return explicit insufficient-evidence behavior for unsupported questions.
+- Keep OpenAI optional; lexical retrieval, source preview, and deterministic quiz generation must work without it.
+- Validate structured quiz output and evidence references before persistence.
+- Require instructor review and publication before learner access.
+- Hide correct answers until backend scoring completes.
+- Never claim retrieval or model quality without a reproducible benchmark.
 
-## Authentication and authorization
+## API, upload, and UI quality
 
-- Frontend route guards are not authorization boundaries.
-- Every protected backend operation must verify identity and role or ownership.
-- Remove authentication tokens from `localStorage` and other JavaScript-readable persistent storage.
-- Prefer secure `HttpOnly` cookie-based sessions or short-lived credentials with safe refresh handling.
-- Set cookie `Secure` in production and configure `SameSite` explicitly.
-- Assess CSRF for every cookie-authenticated state-changing endpoint.
-- Do not return provider access tokens, refresh tokens, session secrets, or raw JWTs to frontend JavaScript.
-- Google login must be OpenID Connect Authorization Code flow with PKCE, state, nonce, backend token exchange, token validation, and safe account linking.
-- Never link identities solely because an unverified email string matches.
-- Logout and security-sensitive account changes must invalidate sessions.
-- Enforce student, instructor, admin, course ownership, enrollment, and publication rules on the backend.
-- Add rate limiting and auditable security events without logging passwords, cookies, tokens, OTP values, or reset tokens.
-
-## AI and retrieval
-
-- The LLM must never receive unrestricted database access.
-- The model may act only through typed, backend-authorized tools.
-- Retrieval must filter by authenticated user, course, enrollment or ownership, publication status, and document visibility before returning context.
-- Store and return document, page, section, lecture, course, and chunk identifiers with retrieved evidence.
-- Course documents are untrusted data, never system instructions.
-- Retrieved text must not override system policy or grant tool permissions.
-- Provide explicit insufficient-evidence behavior.
-- Generated assessments must retain source chunk identifiers and validation status.
-- New retrieval, chunking, embedding, reranking, or prompting changes must be measured against a fixed evaluation set.
-- Keep LLM and embedding providers replaceable.
-- Tests must use deterministic mocks and must not require external model API calls.
-
-## File upload and ingestion
-
-- Validate MIME type, file signature, extension, size, filename, and authorization.
-- Do not expose server filesystem paths.
-- Store original files through a storage abstraction with a local development implementation.
-- Process documents asynchronously.
-- Track queued, processing, indexed, failed, and retry states.
-- Make jobs idempotent where practical.
-- Prevent cross-course and cross-instructor leakage.
-- Sanitize rendered model output and document-derived content.
-
-## API and data standards
-
-- Validate request bodies, path parameters, query parameters, and model-generated structured output.
-- Use consistent error envelopes and appropriate status codes.
-- Never expose stack traces or raw database errors to clients.
-- Add indexes for new high-cardinality lookup fields.
-- Avoid silent schema changes; document migrations and rollback implications.
-- Prefer pagination for unbounded collections.
-- Use request or correlation IDs in logs.
-- Do not log sensitive request bodies.
-
-## UI standards
-
-- Preserve the existing visual language unless the task includes redesign.
-- Provide loading, empty, success, partial, and failure states.
-- Make AI citations clickable to their source location when possible.
-- Clearly label AI-generated content.
-- Do not present unsupported AI answers as authoritative.
-- Ensure keyboard access and accessible labels for new interactive controls.
+- Validate external inputs and use consistent, non-sensitive errors.
+- Enforce upload size, supported PDF handling, ownership, duplicate prevention, and course isolation.
+- Never expose filesystem paths, stack traces, secrets, or raw database errors.
+- Centralize credentialed requests through the Axios client.
+- Provide loading, disabled, empty, success, and failure states for asynchronous UI.
+- Render model/document output safely and keep citations tied to trusted provenance.
 
 ## Definition of done
 
-A feature is complete only when:
-
-- The behavior works end to end or is explicitly marked as scaffolded.
-- Authorization is enforced and tested.
-- Invalid input and failure cases are handled.
-- Relevant tests pass.
-- Existing builds are not broken.
-- Environment variables are documented in `.env.example`.
-- Architecture and API changes are documented.
-- `docs/BUILD_STATUS.md` is updated.
+- Requested behavior works end to end or is explicitly marked unverified.
+- Failure and authorization cases are covered proportionately.
+- Relevant syntax checks, regression scripts, demo smoke checks, and frontend build pass.
+- Configuration is represented with placeholders in `.env.example`.
+- Architecture and status documentation match the code.

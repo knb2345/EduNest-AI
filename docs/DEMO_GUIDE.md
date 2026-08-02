@@ -1,8 +1,8 @@
-# EduNest AI demo guide
+# EduNest AI Demo Guide
 
-This walkthrough demonstrates the course-grounded AI Tutor and Practice Quiz features without a local MongoDB installation or an OpenAI key.
+This walkthrough presents EduNest AI as one product: identity, role-based course access, course-grounded tutoring, instructor-reviewed quizzes, student submission, and backend scoring.
 
-## Start the demo
+## Start the product
 
 From the repository root:
 
@@ -12,40 +12,54 @@ npm run demo
 
 The command starts:
 
-- React frontend: `http://localhost:3000`
-- Express API: `http://localhost:4000/api/v1`
-- An ephemeral MongoDB instance managed by `mongodb-memory-server`
+- React at `http://localhost:3000`
+- Express at `http://localhost:4000/api/v1`
+- an ephemeral in-memory MongoDB database
+- three users, two isolated courses, and `sample/edunest_sample.pdf`
 
-The terminal prints a new **EduNest AI Demo Course ID** and **Course Isolation Demo ID** on each run. Keep the first ID for the walkthrough.
+The terminal prints new course IDs on every run. Keep the main **EduNest AI Demo Course ID** available.
 
 ## Demo accounts
 
-All accounts use password `Demo123!`.
+All accounts use `Demo123!`.
 
-| Role | Email |
-|---|---|
-| Instructor | `instructor@edunest.demo` |
-| Enrolled student | `student@edunest.demo` |
-| Non-enrolled outsider | `outsider@edunest.demo` |
+| Role | Email | Purpose |
+|---|---|---|
+| Instructor | `instructor@edunest.demo` | Course owner, document ingestion, quiz authoring |
+| Enrolled Student | `student@edunest.demo` | Tutor access, published quiz submission |
+| Non-enrolled Student | `outsider@edunest.demo` | Enrollment-denial demonstration |
 
-## 1. Instructor PDF upload
+## 1. Identity and dashboard
 
-1. Sign in as `instructor@edunest.demo`.
-2. Open `http://localhost:3000/courses/<COURSE_ID>/ai` using the printed EduNest AI Demo Course ID.
-3. In the AI Tutor panel, choose `sample/edunest_sample.pdf`.
-4. Select **Upload edunest_sample.pdf**.
-5. Expect an upload-success message reporting one indexed chunk.
-6. Upload the same file again to demonstrate SHA-256 duplicate prevention. Expect **Document already uploaded** rather than a second set of chunks.
+1. Open `/login` and point out both email/password and **Continue with Google**.
+2. In the no-credential demo, Google is visibly disabled while password login remains operational.
+3. Sign in as the instructor.
+4. Show the authenticated profile and Instructor dashboard/course-management navigation.
+5. Explain that login produced an EduNest JWT and that the backend resolves role and course ownership for protected operations.
 
-The fixture contains three facts on page 1:
+OTP registration and password reset require configured mail delivery. Google login requires the Google Cloud settings documented in the README; do not claim a live provider check during the deterministic demo.
+
+## 2. Course structure and instructor ownership
+
+1. Open the instructor's course list.
+2. Show that courses contain sections and lecture subsections and can be managed from instructor routes.
+3. Open `/courses/<COURSE_ID>/ai` for the main demo course.
+4. Note that document upload and quiz-draft actions are owner-only API operations.
+
+## 3. PDF ingestion
+
+1. Upload `sample/edunest_sample.pdf`.
+2. Confirm the success response and stored-chunk count.
+3. Explain that `pdfjs-dist` extracts text by page, chunks retain document/page provenance, and SHA-256 prevents the same content from being ingested twice in one course.
+4. Upload the same file again to demonstrate duplicate prevention if desired.
+
+The fixture states:
 
 - EduNest AI was launched in 2025.
 - The demo course contains six learning modules.
 - The final assessment requires a score of 70 percent.
 
-## 2. AI Tutor checks
-
-### Supported question
+## 4. Course-grounded AI Tutor
 
 Ask:
 
@@ -53,96 +67,85 @@ Ask:
 When was EduNest AI launched?
 ```
 
-Without an OpenAI key, expect a source excerpt, an `edunest_sample.pdf · page 1` citation, and the UI label:
+Expected no-key behavior:
+
+- mode: `source_preview`
+- fallback: `no_api_key`
+- evidence from the uploaded course document
+- citation containing the document name and page number
+
+Then ask:
 
 ```text
-Source preview — no AI key configured
+Who is the chief executive officer of Acme Robotics?
 ```
 
-The application deliberately presents this as retrieved evidence, not as a synthesized AI answer.
+Expected behavior:
 
-### Unsupported question
+- mode: `insufficient_evidence`
+- no unsupported answer
+- no unrelated course material
 
-Ask:
+Explain that lexical retrieval is always available. When OpenAI is configured, embeddings can drive retrieval and a grounded LLM can compose the answer; citations still come from persisted chunk provenance.
 
-```text
-What is the capital of France?
-```
+## 5. Instructor Practice Quiz lifecycle
 
-Expect the insufficient-evidence state with no fabricated answer or citation.
+1. Open the Practice Quiz panel.
+2. Generate three questions from the uploaded material.
+3. Show the draft state and citations.
+4. Edit a prompt or explanation.
+5. Delete a draft question if desired, then generate/save the intended set.
+6. Publish the quiz.
 
-### Other no-key labels
+In no-key mode, generation is deterministic and short-answer based. With OpenAI configured, the API can request structured short-answer and multiple-choice output, then validates it against retrieved evidence before persistence.
 
-- `Source preview — no AI key configured`: retrieval found sufficiently relevant course evidence, but no provider key is configured.
-- `Source preview — AI request failed`: an OpenAI key was present, but the provider request failed; retrieved evidence is shown instead.
-- `Insufficient evidence`: no course chunks passed the relevance and token-coverage checks.
+## 6. Student submission and backend scoring
 
-## 3. Generate, review, and publish a quiz
+1. Log out; confirm navigation returns home and local session state is cleared.
+2. Sign in as `student@edunest.demo`.
+3. Open the same course AI route.
+4. Open the published quiz. Drafts and correct answers are not exposed.
+5. Answer all questions and submit once.
+6. Show the aggregate score and per-question submitted answer, correct answer, correctness, explanation, and document/page citation.
+7. Use **Try Again** or **Back to Quizzes** to show clean answer-state reset.
 
-1. In **Practice Quiz**, leave the question count at `3` and difficulty at `Mixed`.
-2. Keep **Short answer** enabled. The no-key generator supports deterministic short-answer questions.
-3. Select **Generate Practice Quiz**.
-4. Expect a locally generated draft with three questions derived from the sample facts.
-5. Review the title, question text, correct answers, explanations, difficulty, and citations.
-6. Edit a draft field if desired and select **Save draft**.
-7. Select **Publish quiz**.
-8. Confirm the status changes to `published`.
+Scoring happens on the API; the browser cannot decide which answers are correct.
 
-Published quizzes cannot be edited, and students cannot access drafts.
-
-## 4. Student submission
-
-1. Log out and sign in as `student@edunest.demo`.
-2. Open the same `/courses/<COURSE_ID>/ai` URL.
-3. Select the published quiz.
-4. Confirm that correct answers and explanations are not visible.
-5. Confirm that **Submit quiz** is disabled until all questions are answered.
-6. For the default deterministic quiz, enter:
-   - `2025`
-   - `2025`
-   - `six`
-7. Submit through the frontend.
-
-The expected result screen is:
-
-- Score summary: `3/3 (100%)`
-- Each question marked **Correct**
-- The student's submitted answer
-- The correct answer
-- A short explanation
-- `edunest_sample.pdf · page 1`
-
-Use **Try Again** to clear answers while keeping the quiz open. Use **Back to Quizzes** to clear the selected quiz, answers, and result. Reopening the quiz must also start with blank answers.
-
-## 5. Outsider authorization test
+## 7. Enrollment and cross-course isolation
 
 1. Log out and sign in as `outsider@edunest.demo`.
-2. Open the same course AI URL.
-3. Refresh or attempt to list quizzes.
+2. Request the main course Tutor or quiz route.
+3. Confirm the `403` authorization result.
+4. Explain that every Tutor/quiz lookup is scoped to a course before evidence or draft data is returned.
 
-Expect a `403` response displayed as:
+The second seeded course exists to demonstrate that changing a course or quiz identifier does not cross the course boundary.
+
+## 8. Optional commerce and provider paths
+
+When Razorpay is configured, demonstrate payment capture, server verification, and enrollment. When OpenAI is configured, re-upload after restart to create embeddings, then show grounded responses or structured quiz generation. When Google is configured, use the exact local callback URI:
 
 ```text
-Not enrolled or instructor
+http://localhost:4000/api/v1/auth/google/callback
 ```
 
-The same user is also blocked from querying course evidence.
+Only claim these paths as live-tested when valid developer-owned credentials were actually exercised.
 
-## Optional OpenAI mode
+## Automated smoke verification
 
-The deterministic demo is the default. To exercise the optional provider path, create `server/.env` and add:
+With the demo API running, execute from `server/`:
 
-```dotenv
-OPENAI_API_KEY=your-key
-EMBEDDING_MODEL=text-embedding-3-small
-LLM_MODEL=gpt-4o-mini
+```bash
+npm run demo:verify
 ```
 
-Restart `npm run demo` and upload the PDF after the key is configured. In this mode, ingestion attempts embeddings, supported tutor questions request a grounded answer, and quiz generation requests structured JSON before validating every question against retrieved chunks.
+The script checks password login, course seeding, ownership, enrollment, outsider isolation, PDF ingestion, a cited supported response, and insufficient-evidence behavior.
 
-Never commit `server/.env` or a real key.
+Run provider-independent authentication checks from the repository root:
 
-## Stop the demo
+```bash
+node server/authRegressionTest.js
+```
 
-Press `Ctrl+C` in the terminal running `npm run demo`. The `concurrently -k` script stops both frontend and backend, and the in-memory database is discarded.
+## Stop
 
+Press `Ctrl+C` in the demo terminal. The database is intentionally discarded.

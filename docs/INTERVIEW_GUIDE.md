@@ -1,107 +1,101 @@
-# EduNest AI interview guide
+# EduNest AI Interview Guide
 
-## 60-second project pitch
+## 60-second product pitch
 
-EduNest AI extends an existing MERN learning-management application with a course-grounded tutoring and assessment workflow. Instructors can upload a PDF they own; the Express backend extracts page-aware text, stores course-scoped chunks in MongoDB, prevents duplicate uploads, and retrieves relevant evidence with a local lexical scorer or optional OpenAI embeddings. Students and instructors can ask course questions and receive either cited source previews, a grounded optional LLM answer, or an explicit insufficient-evidence response. The same evidence can generate a Practice Quiz: deterministic short-answer generation works without a key, while an optional structured LLM path supports richer questions. Instructors review drafts before publishing, enrolled students submit answers, and the backend returns scores, explanations, and citations. A seeded `npm run demo` makes the complete no-key workflow reproducible locally.
+EduNest AI is a MERN learning platform that covers identity, course authoring, enrollment, payments, content progress, grounded tutoring, and practice assessment. Instructors organize courses into sections and lectures, upload source PDFs, query course evidence, generate and review quiz drafts, and publish assessments. Enrolled students consume lessons, track progress, ask the course-grounded Tutor, submit published quizzes, and receive backend-scored explanations with page citations. The system works deterministically without AI credentials and can optionally use OpenAI embeddings and grounded generation. Security is enforced on the Express API through EduNest JWT sessions, roles, course ownership, enrollment checks, and cross-course query scoping. Identity supports OTP-verified passwords and Google OpenID Connect without unsafe account linking.
 
-## Existing LMS foundation versus my additions
+## Why a single full-stack product?
 
-The repository began with an existing MERN LMS foundation that already included authentication, roles, course management, enrollment, dashboards, progress, cart, and payment flows. I did not claim those baseline features as a from-scratch build.
+Identity, authorization, learning data, retrieved evidence, quiz publication, and scoring all depend on the same user/course boundary. Keeping those decisions in the Express API makes ownership and enrollment checks consistent before MongoDB records or provider calls are reached. React and Redux focus on interaction and state; they do not act as the authorization boundary.
 
-My additions are the course AI page and entry points, PDF ingestion pipeline, `DocChunk` model, retrieval and provider abstractions, grounded tutor controller/routes, Practice Quiz model and generation/validation/scoring logic, instructor and student quiz UI, authorization checks around course AI data, the seeded in-memory demo, and portfolio documentation.
+## Authentication architecture
+
+Email/password registration verifies an OTP, hashes the password, and creates a role-bearing user and profile. Login creates a 24-hour EduNest JWT. Password reset uses an expiring emailed token.
+
+Google login uses the OAuth 2.0 Authorization Code flow for code exchange and OpenID Connect for authentication. The backend generates state, nonce, and an S256 PKCE pair; stores temporary values in HttpOnly cookies; uses the exact configured redirect URI; exchanges the code with the server-only secret; and relies on provider metadata and signing keys to validate signature, issuer, audience, expiration, and nonce. It then checks `email_verified`, resolves the provider subject, and issues the normal EduNest JWT.
+
+Google tokens are not application bearer tokens and are not stored. The final redirect contains no JWT. A new Google account is always Student. A matching unlinked email stops with a conflict, preventing automatic-link account takeover.
 
 ## Why retrieval grounding?
 
-The goal is to answer from instructor-provided material rather than general model knowledge. Retrieval narrows the context to a small set of course chunks, preserves document/page provenance, and gives the application a principled abstention path. It also makes the feature useful without an LLM because retrieved excerpts and citations can be shown directly.
+An unconstrained model can answer from general knowledge and provide no provenance. EduNest first authorizes the caller, scopes chunks by course, ranks stored evidence, and either returns a cited result or abstains. Optional LLM generation receives only retrieved excerpts; citations are generated from trusted stored provenance.
 
-Grounding reduces the opportunity for unsupported answers, but it does not prove factual correctness. That is why the implementation avoids making measured hallucination or retrieval-accuracy claims.
+## Page-aware extraction and chunks
 
-## Lexical retrieval versus embeddings
+`pdfjs-dist` extracts each page separately. Chunks retain course ID, document identity, content hash, filename, page number, chunk index, and text. Page boundaries make citations explainable and avoid inventing page numbers after generation.
 
-The no-key path tokenizes the query and all chunks, computes inverse-document-frequency weights, scores query terms against chunk term frequency, normalizes by chunk length, and returns the top `K` course-scoped chunks. It is a compact TF-IDF-style scorer, not full BM25.
+Chunking is deterministic and compact. The trade-off is that fixed character windows are simpler than semantic segmentation, but they keep no-key demos reproducible and evidence storage auditable.
 
-When stored chunks contain embeddings, the retriever requests a query embedding and ranks compatible vectors with cosine similarity. If the embedding request fails or is unavailable, it falls back to lexical retrieval. This trade-off keeps the demo deterministic while preserving an optional semantic path.
+## Lexical versus embedding retrieval
 
-## Page-aware extraction and chunking
+Lexical retrieval tokenizes the query and chunks, computes inverse-document-frequency-style weights, and scores overlap. It is local, predictable, and always available. Optional embedding retrieval stores vectors on chunks and ranks with cosine similarity, improving paraphrase matching at the cost of provider dependency, ingestion work, and storage.
 
-`pdfjs-dist` reads the PDF page by page. Text items are joined and normalized per page, then split into chunks of at most 1,200 characters. Each `DocChunk` stores `courseId`, document hash/name, page number, text, optional embedding, and creation time.
+The retriever selects the embedding path only when compatible vectors exist; otherwise it uses lexical scoring. No retrieval-quality metric is claimed because there is no labelled benchmark.
 
-Chunking within each page ensures a chunk never silently crosses page boundaries, so a citation can point to the original document and page. The approach is intentionally simple; it does not yet split on semantic sections or sentence boundaries.
+## Citation and insufficient-evidence design
 
-## Citation generation
+The Tutor returns citations built from the exact chunks used as evidence. Each citation contains document and page provenance. Before response generation, evidence score/coverage checks detect missing or weak support. Unsupported questions return `insufficient_evidence` rather than prompting a model to guess.
 
-Tutor citations are deduplicated from the retrieved chunks by `docName:pageNumber`. Quiz questions retain source chunk IDs and document/page citations. Before submission, the student-safe serializer removes correct answers and explanations. After backend scoring, the response includes those fields and the citations for each question.
+This safeguard reduces obvious unsupported output, but no hallucination-reduction percentage is claimed.
 
-## Insufficient-evidence logic
+## Duplicate document behavior
 
-The tutor abstains in three cases:
+Upload computes a SHA-256 hash and checks it within the course. The same bytes cannot be stored twice in one course. A changed document with the same name replaces that document's course-scoped chunks. The hash is a deduplication identity, not a malware or file-signature check.
 
-1. The course has no retrieved chunks.
-2. The best lexical or semantic score does not exceed its configured threshold.
-3. Fewer than 60% of the meaningful query tokens appear in the retrieved evidence.
+## Practice Quiz lifecycle
 
-The API returns `mode: "insufficient_evidence"`, `answer: null`, and an empty citation list. This is heuristic, not a measured classifier.
+Generation begins with the same course-scoped retrieval used by the Tutor. No-key mode recognizes supported factual patterns and creates deterministic short-answer questions. Optional LLM mode requests structured questions and validates answers and cited chunk IDs against retrieved evidence.
 
-## Duplicate PDF handling
+Generated quizzes remain drafts. The course owner reviews, edits, removes questions, saves, and explicitly publishes. Enrolled students receive only published student-safe fields. The backend accepts question-ID-keyed answers, scores them, and returns explanations and citations after submission.
 
-The upload controller computes a SHA-256 hash of the PDF bytes and checks for an existing chunk with the same `courseId` and hash. A duplicate returns success with zero new chunks. If the filename matches an existing document but its bytes differ, the old course/name chunks are replaced before the new content is stored.
+The review gate separates machine-proposed content from learner-visible assessment.
 
-## Course isolation and authorization
+## Authorization and isolation
 
-Every AI endpoint uses JWT authentication. Upload, generation, draft editing, and publishing compare `req.user.id` with the course instructor. Tutor queries and quiz reads require either that ownership or enrollment in `studentsEnroled`. Student quiz lists include only `published` items, and quiz lookup includes both course and quiz IDs. The seeded outsider account verifies the denial path.
+- JWT middleware verifies the application session for local and Google identities.
+- Role middleware resolves the current database user.
+- Course owners alone can upload, generate, edit, or publish.
+- Owners and enrolled students can query the Tutor.
+- Enrolled students alone can open/submit published quizzes.
+- Course and quiz IDs are bound in database queries.
+- Correct answers are stripped before student submission.
 
-Authorization happens before evidence retrieval, preventing the retrieval layer from becoming the security boundary.
+Changing frontend state or URL parameters cannot grant access because the API repeats these checks.
 
-## Deterministic no-key fallback
+## Payments and progress
 
-The local quiz generator scans retrieved sentences for explicit factual patterns such as launch years, counts, and required percentages. It creates short-answer questions with the originating chunk ID, page citation, explanation, and requested difficulty. This is narrow by design: it provides a reproducible demo without pretending to be a general natural-language question generator.
+When Razorpay is configured, the API creates and verifies payment state before enrollment. Course viewing records completed lectures in `CourseProgress`, and the dashboard derives completion percentage from course content and stored completions.
 
-## Structured quiz generation
+These provider-backed operations remain optional so the product can run locally without external credentials.
 
-With an OpenAI key, the provider requests strict JSON containing the quiz title and questions. Each question includes type, text, options, answer, explanation, difficulty, source chunk IDs, and citations. Markdown fences are stripped before parsing, and invalid JSON fails validation rather than being saved blindly.
+## Important engineering trade-offs
 
-## Evidence validation
+- JWT bearer compatibility is retained for password sessions, while Google handoff uses an HttpOnly JWT cookie and a non-secret Redux marker.
+- The demo uses in-memory MongoDB for one-command reproducibility; normal development uses persistent MongoDB.
+- Lexical retrieval and deterministic generation guarantee no-key behavior; their supported language patterns are intentionally bounded.
+- Embeddings remain in MongoDB chunk records, which is adequate for this product scope but not a scale claim.
+- Quiz attempts are scored but not persisted as attempt history.
+- Provider discovery is lazy, so missing Google settings never break startup.
 
-Validation requires every question to reference retrieved chunks from the same course. Required fields must be present, requested question types must match, multiple-choice answers must match an option, and the normalized answer tokens must occur in the referenced evidence. This is lexical support validation; it is intentionally conservative and is not equivalent to semantic fact checking.
+## Verification story
 
-## Draft versus publish workflow
+The product has three complementary checks:
 
-Generated quizzes are created with `status: "draft"`. Instructors can edit and save only drafts. Students see only published quizzes and receive a sanitized representation. Publishing is an explicit instructor action and published quizzes cannot be edited through the current endpoint.
+1. Backend syntax checks for changed JavaScript.
+2. `authRegressionTest.js` for disabled/configured OIDC settings, user-model rules, JWT claims, and cookie policy without provider credentials.
+3. The seeded demo verification for password login, ownership/enrollment, PDF ingestion, citations, and abstention, plus the React production build for client integration.
 
-This separation makes the model an assistant to the instructor rather than an autonomous publisher.
+Live Google or OpenAI success must be reported only after valid credentials are used. Code/configuration verification is not the same as a live provider authentication.
 
-## Backend scoring
+## Current constraints
 
-The frontend sends an `answers` object keyed by question ID. The backend normalizes submitted and correct answers, performs exact normalized matching, counts correct responses, and returns score, total, percentage, and per-question results. The current short-answer scorer is deterministic and transparent; it does not award semantic partial credit.
+- No persisted quiz-attempt history
+- No labelled retrieval benchmark
+- Bounded deterministic quiz grammar
+- No live-provider guarantee without credentials
+- MIME/extension plus parser PDF validation rather than independent signature inspection
+- Local demo data resets on shutdown
 
-## Frontend quiz state synchronization issue and fix
+## Sensible next engineering work
 
-The original student flow cleared answers and old results only after an asynchronous quiz fetch completed. Rapid quiz changes could therefore display stale state, and an older request could overwrite a newer selection. Submission also lacked a complete-answer condition and an immediate duplicate-request guard.
-
-The fix clears selected quiz data, answers, results, and mode synchronously when selection changes; ignores stale fetch completions through an effect cleanup flag; stores controlled answers by question ID; requires every answer before enabling submit; and uses a ref-based in-flight guard before React's loading state rerenders. Retry and back actions use the same reset behavior.
-
-## Major design trade-offs
-
-- **Single Express service:** appropriate for a personal project and keeps authorization close to data access, but long document operations run in the request path.
-- **MongoDB chunk storage:** easy to inspect and course-filter, but not a dedicated search index.
-- **Simple lexical baseline:** deterministic and no-key, but not evaluated BM25 or hybrid retrieval.
-- **Page-boundary chunking:** reliable citations, but less semantically coherent than structure-aware chunking.
-- **Exact normalized scoring:** defensible and predictable, but limited for free-form answers.
-- **Instructor approval:** adds a step but prevents automatic publication of generated content.
-- **In-memory demo:** reproducible and easy to present, but deliberately non-persistent.
-
-## Current limitations
-
-- No persisted quiz-attempt history.
-- No measured retrieval-quality or latency benchmark.
-- No-key quiz generation supports a small factual grammar and short answers only.
-- Optional OpenAI behavior requires a real key and is separate from deterministic demo verification.
-- PDF validation is not based on independent magic-byte inspection.
-- Embeddings are stored in MongoDB arrays and ranked in application memory.
-- Backend scoring treats missing answers as incorrect; the frontend prevents incomplete submissions.
-- The inherited LMS contains lint warnings and broader technical debt outside this feature.
-
-## What I would improve with more time
-
-I would first add focused automated tests around ownership/enrollment, duplicate ingestion, abstention, quiz evidence validation, and React state transitions. Then I would persist attempts, create a small labelled retrieval fixture, compare the existing lexical scorer with BM25 and embeddings using measured metrics, improve structure-aware chunking, strengthen PDF signature validation, and add a richer deterministic multiple-choice fallback. I would make those changes only after establishing baselines rather than claiming unmeasured improvements.
-
+Without changing product scope, the strongest hardening opportunities are focused integration tests with a mock OIDC provider, durable quiz-attempt records, PDF signature validation, labelled retrieval fixtures, and CSP/CSRF review for the final deployment topology.

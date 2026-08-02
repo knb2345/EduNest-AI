@@ -1,5 +1,5 @@
 ---
-applyTo: "**/*.test.js,**/*.test.jsx,**/*.test.ts,**/*.test.tsx,**/*.spec.js,**/*.spec.jsx,**/*.spec.ts,**/*.spec.tsx,ai-service/tests/**/*.py"
+applyTo: "**/*.test.js,**/*.test.jsx,**/*.test.ts,**/*.test.tsx,**/*.spec.js,**/*.spec.jsx,**/*.spec.ts,**/*.spec.tsx,server/*RegressionTest.js,server/e2eTest.js"
 ---
 
 # Test instructions

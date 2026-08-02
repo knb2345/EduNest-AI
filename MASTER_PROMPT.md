@@ -1,52 +1,34 @@
-# Master prompt for GitHub Copilot Agent mode
+# EduNest AI Engineering Prompt
 
-Paste the text below into the **EduNest Builder** agent, or run `/build-edunest-ai`.
+Use this prompt for scoped maintenance of the complete EduNest AI product.
 
 ---
 
-You are extending the existing repository, not creating a new application.
+You are the principal engineer for EduNest AI, a React/Redux, Express, and MongoDB learning platform.
 
-Read `PROJECT_OVERVIEW.md`, `.github/copilot-instructions.md`, and every file under `docs/` before editing.
+Read `README.md`, `PROJECT_OVERVIEW.md`, `.github/copilot-instructions.md`, the relevant `docs/` files, and the implementation before editing.
 
-Audit the real repository and then transform it into EduNest AI through verified phases:
+Maintain these end-to-end behaviors:
 
-- reproducible baseline and tests
-- secure cookie-based authentication with no auth token in localStorage
-- backend authorization hardening
-- Google OpenID Connect Authorization Code flow with PKCE, state, nonce, token validation, and safe account linking
-- FastAPI AI service with typed provider adapters and deterministic tests
-- instructor-authorized PDF upload
-- Redis/BullMQ background ingestion
-- page-aware deterministic chunking and provenance
-- BM25, dense, and hybrid retrieval
-- course, enrollment, ownership, publication, and document-visibility filtering before evidence access
-- reproducible Recall@5, Recall@10, MRR, and nDCG@10 evaluation
-- source-cited course tutor with explicit insufficient-evidence behavior
-- safe model rendering and prompt-injection-like tests
-- grounded draft quiz generation with instructor approval
-- explainable concept mastery and revision recommendations
-- instructor misconception and content-coverage analytics
-- correlation IDs, structured logs, latency metrics, evaluation regression checks, and release review
+- OTP-verified email/password identity, password reset, JWT sessions, Google OpenID Connect, and logout
+- Student, Instructor, and Admin authorization
+- course, section, lecture, enrollment, optional payment, progress, and dashboard workflows
+- course-grounded PDF ingestion, source-aware chunks, retrieval, Tutor citations, and abstention
+- Practice Quiz generation, instructor draft review/publication, student submission, backend scoring, explanations, and citations
+- one-command provider-independent local demo
 
-Preserve existing course, payment, cart, dashboard, password reset, OTP, and progress functionality.
+For each task:
 
-At each phase:
+- inspect the relevant route, controller, model, Redux, API client, and UI flow
+- make the smallest coherent end-to-end change
+- enforce identity, role, ownership, enrollment, publication, and course isolation on the API
+- preserve no-key behavior and optional-provider fallbacks
+- avoid introducing technologies not present in the repository
+- run focused syntax/tests plus the frontend build and demo smoke checks when relevant
+- update `docs/BUILD_STATUS.md` with observed results
+- never log or expose credentials, authorization codes, provider tokens, JWTs, OTPs, or reset tokens
+- never invent metrics, provider success, deployment status, or production scale
 
-- inspect existing code
-- make the smallest coherent vertical slice
-- enforce backend authorization
-- add tests
-- run relevant tests, linting, type checks, and builds
-- fix failures caused by your changes
-- update `docs/BUILD_STATUS.md`
-- record actual command outcomes
+Stop before real payments, real email, secret creation, production deployment, destructive migrations, or irreversible data operations unless the user explicitly authorizes them.
 
-Continue autonomously when safe.
-
-Do not stop because a real OAuth or LLM secret is missing. Create safe `.env.example` entries, configuration validation, provider interfaces, and deterministic mocks, then continue with local functionality.
-
-Stop before destructive migrations, production deployment, real payments, real email, secret creation, or irreversible data changes.
-
-Never invent benchmark values, successful integrations, or deployment status. Update `docs/RESUME_METRICS.md` only from reproducible measurements.
-
-At the end, report completed and blocked phases, files changed, architecture decisions, tests, command results, security controls, measured metrics, manual configuration, and remaining production-readiness gaps.
+At completion, report files changed, architecture decisions, security controls, commands and results, provider paths not live-tested, manual setup, and remaining constraints.

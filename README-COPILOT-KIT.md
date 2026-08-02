@@ -1,62 +1,32 @@
-# EduNest AI Copilot Build Kit
+# EduNest AI Engineering Assistant Configuration
 
-This kit configures GitHub Copilot in VS Code to extend the existing EduNest/StudyNotion MERN repository into a secure, evaluated AI learning platform.
+The `.github` directory contains workspace instructions, review profiles, and focused prompts for maintaining the complete EduNest AI product.
 
-## Install
+## Product references
 
-Copy the contents of this kit into the **root of the existing repository**, preserving the `.github` directory.
+Engineering work should begin with the current sources of truth:
 
-Expected result:
+- `README.md` for capabilities and setup
+- `PROJECT_OVERVIEW.md` for architecture and end-to-end flows
+- `docs/BUILD_STATUS.md` for verified and unverified behavior
+- `docs/DEMO_GUIDE.md` for the deterministic product walkthrough
+- `.env.example` for configuration names and provider boundaries
 
-```text
-your-repository/
-├── .github/
-│   ├── copilot-instructions.md
-│   ├── agents/
-│   ├── instructions/
-│   └── prompts/
-├── docs/
-│   ├── AI_PRODUCT_SPEC.md
-│   ├── TARGET_ARCHITECTURE.md
-│   ├── IMPLEMENTATION_ROADMAP.md
-│   ├── ACCEPTANCE_CRITERIA.md
-│   └── RESUME_METRICS.md
-├── PROJECT_OVERVIEW.md
-└── existing application files...
-```
+The running code is authoritative when documentation and implementation differ. Update both in the same change.
 
-Keep the repository's existing `PROJECT_OVERVIEW.md`. It describes the current React, Redux, Express, MongoDB, JWT, course, payment, and progress flows.
+## Workspace prompts
 
-## Start in VS Code
+- `/audit-edunest`: map the current product and verification baseline
+- `/build-foundation`: maintain identity, sessions, and authorization
+- `/build-ai-core`: maintain ingestion, retrieval, Tutor, and Practice Quiz behavior
+- `/review-edunest`: perform a security and regression review
+- `/build-edunest-ai`: execute a scoped, end-to-end product task
 
-- Commit or stash current work so the starting state is recoverable.
-- Open the repository root as the VS Code workspace.
-- Reload the VS Code window after copying this kit.
-- Open **Chat → Configure Chat** and confirm that the prompt files and custom agents are discovered.
-- Select the **EduNest Builder** custom agent.
-- Run `/audit-edunest`.
-- Review `docs/REPOSITORY_AUDIT.md` and `docs/BUILD_STATUS.md`.
-- Run `/build-edunest-ai`.
+## Safety and evidence
 
-The master prompt is intentionally phased. It should inspect the real package scripts and code before making architectural changes.
-
-## Recommended execution
-
-Run the prompts in this order when you want more control:
-
-```text
-/audit-edunest
-/build-foundation
-/build-ai-core
-/review-edunest
-```
-
-Run `/build-edunest-ai` when you want Copilot to execute the complete roadmap autonomously while preserving phase gates.
-
-## Important
-
-- Do not provide real Google OAuth, payment, database, or LLM secrets in chat.
-- Put secret names and safe placeholders in `.env.example`.
-- OAuth can be implemented and tested with mocks before real credentials are configured.
-- The agent must report rather than invent performance metrics.
-- Review diffs before accepting destructive changes or dependency upgrades.
+- Never put real OAuth, payment, database, email, storage, or LLM secrets in prompts or tracked files.
+- Keep optional-provider absence compatible with local startup and `npm run demo`.
+- Use OpenID Connect terminology for Google authentication and OAuth 2.0 terminology for authorization-code exchange.
+- Report live provider success only after a credential-backed test.
+- Record reproducible command outcomes; do not invent metrics or deployment status.
+- Preserve copyright, license, and package attribution.
