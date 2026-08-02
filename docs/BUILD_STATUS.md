@@ -1,31 +1,45 @@
-# EduNest AI build status
+# EduNest AI Build Status
 
-Last verified: 2026-08-02
+Last completion pass: 2026-08-03
 
-## Complete portfolio scope
+## Product scope present
 
-- Page-aware PDF ingestion and deterministic chunking
-- Course-scoped MongoDB chunk storage and duplicate prevention
-- Local lexical retrieval and optional embedding retrieval
-- Source-preview, grounded-answer, citation, and insufficient-evidence modes
-- Course-scoped instructor ownership and student enrollment checks
-- Deterministic and optional structured LLM quiz generation paths
-- Instructor draft/edit/save/publish workflow
-- Student-safe published quiz access and backend scoring
-- Per-question answers, explanations, and citations after submission
-- One-command seeded local demo
+- OTP-verified email/password registration, login, reset, JWT authorization, and logout
+- Google Authorization Code + OpenID Connect login with state, nonce, PKCE, verified email, safe persistence, and EduNest JWT handoff
+- Student, Instructor, and Admin roles with server-side role checks
+- Course, section, lecture, enrollment, optional payment, progress, profile, and dashboard workflows
+- Page-aware PDF ingestion, course/document/page chunk provenance, and duplicate prevention
+- Lexical retrieval plus optional embeddings and grounded OpenAI generation
+- Cited Tutor responses and insufficient-evidence safeguards
+- Deterministic and optional structured Practice Quiz generation
+- Instructor draft review/edit/delete/publish and student submission/backend scoring
+- Course ownership, enrollment, and cross-course isolation
+- One-command local demo
 
 ## Verification status
 
-- Normal frontend production build: passes with inherited ESLint and bundle-size warnings
-- Backend AI/quiz JavaScript syntax checks: included in the documentation verification workflow
-- No-key browser demo: instructor publish, enrolled-student 3/3 submission, retry/reopen reset, and outsider 403 verified
-- Real OpenAI generation: not verified; optional provider path is code-present only
+| Check | Result |
+|---|---|
+| Changed backend JavaScript syntax | Passed in the 2026-08-03 completion pass |
+| Provider-independent authentication regression | Passed: disabled config, redirect config, user rules, JWT claims, cookie policies |
+| Frontend production build | Pending final completion-pass run |
+| Demo startup with Google credentials absent | Pending final completion-pass run |
+| Email/password demo login | Pending final completion-pass run |
+| Tutor upload/retrieval/citations/abstention smoke | Pending final completion-pass run |
+| Practice Quiz regression | Pending final completion-pass run |
+| Browser verification of Google button/callback UI | Pending final completion-pass run |
+| Live Google authentication | Not tested; no credentials supplied |
+| Live OpenAI generation | Not tested; no credentials supplied |
 
-## Known limitations
+## OAuth-disabled behavior
+
+Provider discovery is lazy. With Google variables blank, the server starts normally, `/auth/google/status` reports disabled, the frontend shows a disabled development-safe option, and email/password plus demo workflows remain available.
+
+## Known constraints
 
 - Demo data is ephemeral.
-- Quiz attempts are not persisted.
-- No-key quiz generation is limited to factual short-answer patterns.
-- Retrieval quality and provider behavior have not been benchmarked.
-- Existing LMS code has warnings and technical debt outside the AI feature.
+- Quiz attempts are not stored as history.
+- No-key quiz generation supports bounded factual short-answer patterns.
+- Retrieval quality and provider behavior have no benchmark claims.
+- Live provider paths require developer-owned configuration.
+- PDF validation relies on MIME/filename plus parser success rather than an independent file signature.

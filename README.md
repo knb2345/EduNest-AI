@@ -1,107 +1,154 @@
 # EduNest AI
 
-EduNest AI is a portfolio-focused extension of an existing MERN learning-management foundation. It adds a course-grounded AI Tutor and an evidence-backed Practice Quiz workflow to the LMS's existing authentication, course, enrollment, dashboard, progress, cart, and payment features.
+EduNest AI is a full-stack learning platform for course delivery, learner progress, payments, course-grounded tutoring, and evidence-backed practice assessment. Students, instructors, and administrators use one React application backed by an Express API and MongoDB.
 
-The original LMS foundation was not built entirely from scratch for this project. The work highlighted here is the AI learning layer: PDF ingestion, retrieval, grounded responses, citations, authorization, quiz generation, instructor review, publishing, student submission, and backend scoring.
+The platform supports email/password identity with OTP verification and password recovery, Google login through OpenID Connect, JWT application sessions, course authoring and enrollment, optional Razorpay checkout, PDF-grounded AI Tutor responses, and an instructor-reviewed Practice Quiz lifecycle.
 
-## The problem
+## Product capabilities
 
-Generic chatbots can answer outside a course's curriculum, omit provenance, and expose the wrong material if authorization is handled only in the UI. EduNest AI keeps retrieval scoped to one course, checks instructor ownership or student enrollment on the server, and returns either cited course evidence or an explicit insufficient-evidence response.
+### Identity and access
 
-It also turns the same retrieved evidence into reviewable practice quizzes. Generated questions remain drafts until an instructor edits and publishes them, and correct answers stay hidden from students until backend scoring is complete.
+- Email/password registration for Student and Instructor accounts
+- Email OTP verification before account creation
+- Email-driven password reset and authenticated password changes
+- Google login using the OAuth 2.0 Authorization Code flow with OpenID Connect, state, nonce, and PKCE
+- EduNest JWT application sessions for both sign-in methods
+- Student, Instructor, and Admin roles with role-aware navigation and dashboards
+- Server-enforced role, course-ownership, enrollment, and cross-course authorization
+- Logout that clears browser and server-managed application-session state
 
-## Project highlights
+Google sign-in never creates an Instructor or Admin. A new verified Google identity becomes a Student. If its verified email already belongs to an unlinked EduNest account, login stops with a conflict instead of linking accounts automatically.
 
-### AI Tutor
+### Courses and learning
 
-- Instructor-owned PDF upload with PDF and size validation.
-- Page-aware text extraction with `pdfjs-dist`.
-- Deterministic 1,200-character page chunking with document and page provenance.
-- Course-scoped `DocChunk` storage in MongoDB.
-- SHA-256 duplicate-document prevention per course.
-- Same-name document replacement when the content hash changes.
-- Local TF-IDF-style lexical retrieval with no external AI dependency.
-- Optional OpenAI embeddings stored on chunks and cosine-similarity retrieval.
-- Optional grounded OpenAI answers using only retrieved excerpts.
-- Document-name and page-number citations.
-- Explicit `insufficient_evidence` behavior for missing or weakly supported evidence.
-- Source-preview fallback when no OpenAI key is configured or an LLM request fails.
+- Instructor course creation, editing, publication, and deletion
+- Course sections and lecture content
+- Student discovery and enrollment
+- Razorpay payment capture and verification when credentials are configured
+- Lecture-completion and course-progress tracking
+- Student enrolled-course views and instructor course analytics
+- Profile and settings workflows shared across authenticated roles
 
-### Practice Quiz
+### Course-grounded AI Tutor
 
-- Course-evidence retrieval before generation.
-- Deterministic no-key generation of factual short-answer questions.
-- Optional structured OpenAI generation for short-answer and multiple-choice questions.
-- Validation that generated answers and source chunk IDs are supported by retrieved course evidence.
-- Instructor-only draft generation, editing, deletion of draft questions, saving, and publishing.
-- Published-only access for enrolled students.
-- Student-safe quiz responses that omit correct answers before submission.
-- Backend scoring for question-ID-keyed submissions.
-- Per-question submitted answer, correct answer, correct/incorrect status, explanation, and citations after submission.
-- Controlled frontend answer state, incomplete-submission prevention, duplicate-submit protection, and clean retry/reopen behavior.
+- Instructor-only PDF upload with file-size and parser validation
+- Page-aware extraction with `pdfjs-dist`
+- Source-aware `DocChunk` persistence containing course, document, page, and text provenance
+- SHA-256 duplicate-document prevention within each course
+- Deterministic lexical retrieval without an external AI key
+- Optional OpenAI embedding generation and cosine-similarity retrieval
+- Optional grounded OpenAI answers constrained to retrieved evidence
+- Document and page citations in supported answers
+- Explicit insufficient-evidence responses when course material cannot support a claim
+- Course ownership, enrollment, and course-ID isolation before document access
+
+### Practice Quizzes
+
+- Instructor-only generation from retrieved course evidence
+- Deterministic no-key short-answer generation
+- Optional structured LLM generation for short-answer and multiple-choice questions
+- Evidence validation for generated answers and source chunk references
+- Draft review, question editing, deletion, saving, and publication
+- Published-only access for enrolled students
+- Student-safe payloads that hide answers before submission
+- Question-ID-keyed submission and backend scoring
+- Per-question explanations, correct answers, and document/page citations after scoring
 
 ## Technology stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, Redux Toolkit, React Router, Tailwind CSS, Axios |
-| API | Node.js, Express, JWT middleware, `express-fileupload` |
-| Data | MongoDB and Mongoose; `mongodb-memory-server` for the demo |
-| Documents | `pdfjs-dist`, `pdfkit`, SHA-256 hashing |
-| Retrieval | Local tokenization and TF-IDF-style lexical scoring; optional OpenAI embeddings and cosine similarity |
-| Generation | Deterministic local quiz extraction; optional OpenAI chat completions |
-| Verification | One-command seeded demo, backend verification script, React production build |
+| Web client | React 18, Redux Toolkit, React Router, Tailwind CSS, Axios |
+| API | Node.js, Express, JWT middleware, `cookie-parser`, `express-fileupload` |
+| Identity | bcrypt, OTP email verification, OpenID Connect with `openid-client` |
+| Data | MongoDB, Mongoose, `mongodb-memory-server` for the local demo |
+| Course media | Cloudinary when configured |
+| Documents | `pdfjs-dist`, SHA-256 hashing, page-aware chunks |
+| Retrieval | Local TF-IDF-style lexical scoring; optional OpenAI embeddings and cosine similarity |
+| Generation | Deterministic quiz generation; optional grounded OpenAI chat completions |
+| Payments | Optional Razorpay integration |
 
 ## Architecture
 
 ```mermaid
-flowchart TD
-  React["React frontend"] --> API["Express API"]
-  API --> Mongo["MongoDB"]
+flowchart TB
+  Browser["React + Redux frontend"] --> API["Node.js + Express API"]
 
-  API --> Upload["Instructor PDF upload"]
-  Upload --> Extract["pdfjs-dist page extraction"]
-  Extract --> Chunk["Page-aware chunking"]
-  Chunk --> DocChunk["Course-scoped DocChunk storage"]
-  DocChunk --> Mongo
+  subgraph Identity["Identity and application sessions"]
+    Local["Email/password + OTP + reset"] --> Session["EduNest JWT application session"]
+    Google["Google OAuth 2.0 Authorization Code + OpenID Connect"] --> Checks["State + nonce + PKCE + ID-token validation"]
+    Checks --> Session
+    Session --> Authorization["Role + ownership + enrollment authorization"]
+  end
 
-  DocChunk --> Retrieve{"Lexical or embedding retrieval"}
-  Retrieve --> Evidence["Retrieved course evidence + provenance"]
-  Evidence --> Preview["No-key source preview"]
-  Evidence --> Grounded["Optional grounded OpenAI answer"]
-  Preview --> TutorResult["Citations or insufficient evidence"]
-  Grounded --> TutorResult
+  API --> Local
+  API --> Google
+  Authorization --> Learning["Courses + sections + lectures"]
+  Authorization --> Enrollment["Enrollment + progress"]
+  Authorization --> Payment["Optional Razorpay payments"]
+
+  Learning --> Mongoose["Mongoose models"]
+  Enrollment --> Mongoose
+  Payment --> Mongoose
+  Mongoose --> MongoDB["MongoDB"]
+
+  Authorization --> Upload["Instructor PDF ingestion"]
+  Upload --> PDF["pdfjs-dist page extraction"]
+  PDF --> Chunks["Source-aware DocChunk persistence"]
+  Chunks --> MongoDB
+  Chunks --> Retrieval{"Lexical or embedding retrieval"}
+  Retrieval --> Evidence["Course-scoped evidence + provenance"]
+  Evidence --> Tutor{"Tutor response path"}
+  Tutor --> Preview["Source preview / insufficient evidence"]
+  Tutor --> OpenAI["Optional grounded OpenAI response"]
 
   Evidence --> QuizGen["Deterministic or structured LLM quiz generation"]
-  QuizGen --> Draft["Instructor draft review and edit"]
+  QuizGen --> Draft["Instructor draft review + edit + delete"]
   Draft --> Publish["Publish"]
-  Publish --> Student["Student submission"]
-  Student --> Score["Backend scoring"]
-  Score --> Results["Explanations and document/page citations"]
+  Publish --> Submit["Student submission"]
+  Submit --> Score["Backend scoring"]
+  Score --> Results["Explanations + document/page citations"]
+  OpenAI --> Results
+  Draft --> MongoDB
 ```
 
-There is no Redis, FastAPI service, vector database, queue, or microservice layer in the current implementation. Embedding arrays, when enabled, are stored directly in MongoDB documents.
+Optional embeddings are stored directly on MongoDB chunk records alongside their source provenance.
 
-## Authorization model
+## Authentication design
 
-Every AI route requires a verified JWT. The backend then applies course-specific checks:
+### Email/password
 
-- Only the course's instructor can upload documents, generate quizzes, edit drafts, or publish quizzes.
-- The instructor and enrolled students can query the course tutor.
-- Enrolled students can list and open only published quizzes.
-- Draft correct answers and explanations are removed from student-facing responses.
-- Quiz lookup includes both `courseId` and `quizId`, preventing cross-course quiz access by changing a URL identifier.
-- Non-enrolled users receive a `403` response.
+Registration sends an OTP, validates it on the API, hashes the password with bcrypt, and creates the requested Student or Instructor account. Login verifies the password and issues a 24-hour EduNest JWT. The API accepts that JWT through the existing bearer-token contract and an HttpOnly session cookie. Password reset uses a time-limited emailed token.
 
-Frontend route guards support navigation, but backend ownership and enrollment checks are the security boundary.
+### Google OpenID Connect
+
+1. The frontend reads `GET /api/v1/auth/google/status`; the button is disabled when credentials are absent.
+2. `GET /api/v1/auth/google` creates cryptographically random state, nonce, and PKCE verifier values in temporary HttpOnly cookies.
+3. The backend redirects to Google's authorization endpoint with `response_type=code`, `scope=openid email profile`, state, nonce, and an S256 PKCE challenge.
+4. Google returns to the exact configured backend redirect URI.
+5. The backend compares state, exchanges the one-time code using the server-side client secret and PKCE verifier, and validates the ID token through discovered Google metadata and signing keys. The client library validates issuer, audience, signature, expiry, and nonce.
+6. EduNest accepts only a verified email. A linked Google subject logs in; a new email creates a Student; an existing unlinked email returns a conflict.
+7. The backend issues its own JWT in an HttpOnly cookie and redirects to `/auth/google/callback`. The React page restores Redux profile state through the normal authenticated API. Google tokens are neither persisted nor used for EduNest API authorization.
+8. Temporary OAuth cookies are cleared on callback success and failure. Production cookies use `Secure`, `HttpOnly`, `SameSite=Lax`, bounded expiration, and `__Host-` names for temporary values.
+
+No authorization code, Google token, client secret, password, or EduNest JWT is logged or placed in the post-login redirect URL.
+
+## Authorization boundary
+
+Frontend route guards control navigation; Express middleware and course-scoped database checks are the security boundary.
+
+- Instructors can modify only their own courses and course documents.
+- Tutor queries require course ownership or enrollment.
+- Quiz draft generation, editing, deletion, and publication require course ownership.
+- Students can read and submit only published quizzes for courses in which they are enrolled.
+- Quiz queries bind both `courseId` and `quizId` to prevent cross-course identifier substitution.
+- Student-facing draft responses omit correct answers and explanations until backend scoring completes.
 
 ## One-command local demo
 
-The demo needs no MongoDB installation and no OpenAI key. It starts an in-memory MongoDB instance, seeds users and two isolated courses, creates a valid sample PDF, and starts both application processes.
-
 ### Prerequisites
 
-- Node.js and npm
+- Node.js 16.18 or compatible runtime
 - Root and server dependencies installed once
 
 ```bash
@@ -111,111 +158,92 @@ npm install
 cd ..
 ```
 
-### Start
+Start the complete local product:
 
 ```bash
 npm run demo
 ```
 
 - Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:4000/api/v1`
+- API: `http://localhost:4000/api/v1`
 - Sample PDF: `sample/edunest_sample.pdf`
 
-The terminal prints the generated demo course IDs each time because the database is recreated for every run.
+The command starts React, Express, an ephemeral in-memory MongoDB instance, seeded identities, two isolated courses, and a generated sample PDF. Email/password, Tutor, and Practice Quiz paths work without Google, OpenAI, Razorpay, Cloudinary, or a local MongoDB installation.
 
-### Demo credentials
+All demo users use password `Demo123!`.
 
-All demo accounts use password `Demo123!`.
-
-| Role | Email | Access |
+| Role | Email | Seeded access |
 |---|---|---|
-| Instructor | `instructor@edunest.demo` | Owns both seeded courses |
-| Enrolled student | `student@edunest.demo` | Enrolled in the main demo course |
-| Outsider | `outsider@edunest.demo` | Not enrolled in either course |
+| Instructor | `instructor@edunest.demo` | Owns both courses |
+| Enrolled Student | `student@edunest.demo` | Enrolled in the main course |
+| Non-enrolled Student | `outsider@edunest.demo` | Authorization-denial checks |
 
-## Suggested demo walkthrough
+See [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) for the end-to-end walkthrough.
 
-1. Start `npm run demo` and copy the printed **EduNest AI Demo Course ID**.
-2. Sign in as the instructor and open `/courses/<COURSE_ID>/ai`.
-3. Upload `sample/edunest_sample.pdf`.
-4. Ask `When was EduNest AI launched?` and show the no-key source preview with its page citation.
-5. Ask `What is the capital of France?` and show the insufficient-evidence response.
-6. Generate a three-question Practice Quiz, review/edit the draft, save it, and publish it.
-7. Sign in as the enrolled student, reopen the same course AI page, answer all three questions, and submit.
-8. Show the score plus per-question answers, explanations, and citations.
-9. Use **Try Again** or **Back to Quizzes** to demonstrate clean state reset.
-10. Sign in as the outsider and show that course quiz access is blocked.
+## Standard local configuration
 
-See [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) for the detailed script.
+Copy `.env.example` to `server/.env`. Keep a root `.env` only when overriding the React API base URL.
 
-## Optional OpenAI mode
-
-The local demo works without external services. To exercise the optional provider path, create `server/.env` from `.env.example` and set:
+Required backend values:
 
 ```dotenv
-OPENAI_API_KEY=your-key
-EMBEDDING_MODEL=text-embedding-3-small
-LLM_MODEL=gpt-4o-mini
+MONGODB_URL=mongodb://127.0.0.1:27017/edunest
+JWT_SECRET=replace-with-a-local-development-secret
+PORT=4000
+CLIENT_URL=http://localhost:3000
 ```
 
-Restart the demo after changing environment variables, then upload the PDF again so ingestion can create embeddings. With a configured key:
+For Google login, create a Google **Web application** OAuth client and add this exact Authorized redirect URI:
 
-- document chunks request embeddings;
-- retrieval prefers cosine similarity when compatible embeddings exist;
-- supported tutor questions request a grounded LLM answer;
-- quiz generation requests strict structured JSON and validates it against retrieved evidence;
-- provider failures fall back to source preview, or to deterministic short-answer quiz generation when compatible with the requested question types.
+```text
+http://localhost:4000/api/v1/auth/google/callback
+```
 
-Do not commit `server/.env` or real provider credentials.
+Then set only in `server/.env`:
 
-## Standard local development
+```dotenv
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:4000/api/v1/auth/google/callback
+```
 
-For development with a persistent MongoDB database:
+The client secret must never use a `REACT_APP_` variable. Google login remains disabled when these three values are blank, and every other authentication path continues to operate.
 
-1. Copy `.env.example` to `server/.env` and configure `MONGODB_URL`, `JWT_SECRET`, and any LMS providers you intend to use.
-2. Leave `REACT_APP_BASE_URL` at `http://localhost:4000/api/v1`, or place it in a root `.env` if the API runs elsewhere.
-3. Start the backend from the repository root:
+Start persistent-database development with `npm run server` and `npm start` in separate terminals.
 
-   ```bash
-   npm run server
-   ```
+## Optional providers
 
-4. In another terminal, start the frontend:
+- `OPENAI_API_KEY`: enables embeddings, grounded Tutor generation, and structured quiz generation. Without it, lexical retrieval, source previews, abstention, and deterministic quiz generation remain available.
+- `RAZORPAY_KEY` and `RAZORPAY_SECRET`: enable paid enrollment.
+- Cloudinary values: enable managed course media upload.
+- Mail values: enable OTP, password-reset, and notification delivery.
 
-   ```bash
-   npm start
-   ```
+Provider credentials are server-only and must not be committed.
 
-5. Build the frontend with:
+## Verification commands
 
-   ```bash
-   npm run build
-   ```
+```bash
+node server/authRegressionTest.js
+npm run build
+cd server
+npm run demo:verify
+```
 
-## Limitations
+The provider-independent authentication test validates disabled configuration, redirect validation, user-model rules, JWT claims, and cookie policies. `demo:verify` exercises email/password login, authorization, PDF ingestion, retrieval, citations, and insufficient-evidence behavior against the running demo.
 
-- The demo database is ephemeral and resets when the process stops.
-- Lexical retrieval is a compact in-process TF-IDF-style implementation, not BM25 or a measured production search system.
-- Embeddings and LLM behavior require a valid OpenAI key and were not part of the deterministic no-key verification.
-- The no-key quiz generator recognizes a small set of factual sentence patterns and produces short-answer questions only.
-- Quiz attempts and historical scores are not persisted; scoring is returned for the current submission.
-- The frontend prevents incomplete submissions, while unanswered backend payload entries are currently scored as incorrect rather than rejected.
-- PDF validation uses the upload MIME type or filename extension plus parser success; it does not independently inspect a file signature.
-- Existing LMS areas retain technical debt and production-build warnings inherited from the foundation.
-- This is a local portfolio project, not a production deployment blueprint.
+## Current constraints
 
-## Future improvements
+- Demo data is ephemeral.
+- Quiz attempts and historical scores are not persisted.
+- No-key quiz generation supports a bounded set of factual short-answer patterns.
+- Retrieval quality has not been benchmarked.
+- Live OpenAI, Razorpay, email, Cloudinary, and Google authentication require developer-owned credentials.
+- PDF acceptance uses MIME type or filename plus successful parsing; it does not independently inspect the file signature.
 
-- Add focused automated tests for ingestion, authorization, quiz validation, and frontend state transitions.
-- Persist student attempts and provide a simple attempt history.
-- Add stronger PDF signature validation and clearer document-version management.
-- Add a small labelled retrieval fixture before making retrieval-quality claims.
-- Improve the deterministic generator's supported sentence patterns and multiple-choice fallback.
-- Reduce inherited frontend lint warnings and bundle size.
+## Documentation
 
-## Portfolio notes
-
+- [Project overview](PROJECT_OVERVIEW.md)
 - [Demo guide](docs/DEMO_GUIDE.md)
 - [Interview guide](docs/INTERVIEW_GUIDE.md)
-- [Resume evidence and draft bullets](docs/RESUME_METRICS.md)
-- [Existing LMS overview](PROJECT_OVERVIEW.md)
+- [Resume evidence](docs/RESUME_METRICS.md)
+- [Build status](docs/BUILD_STATUS.md)

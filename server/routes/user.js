@@ -15,6 +15,12 @@ const {
 } = require("../controllers/resetPassword")
 
 const { auth } = require("../middleware/auth")
+const {
+  beginGoogleLogin,
+  googleCallback,
+  googleStatus,
+} = require("../controllers/googleAuth")
+const { clearApplicationSessionCookie } = require("../utils/authSession")
 
 // Routes for Login, Signup, and Authentication
 
@@ -24,6 +30,15 @@ const { auth } = require("../middleware/auth")
 
 // Route for user login
 router.post("/login", login)
+
+router.get("/google/status", googleStatus)
+router.get("/google", beginGoogleLogin)
+router.get("/google/callback", googleCallback)
+
+router.post("/logout", (_req, res) => {
+  clearApplicationSessionCookie(res)
+  return res.status(200).json({ success: true, message: "Logged out" })
+})
 
 // Route for user signup
 router.post("/signup", signup)

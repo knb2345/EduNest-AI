@@ -1,18 +1,15 @@
 ---
-applyTo: "ai-service/**/*.py"
+applyTo: "server/ai/**/*.js,server/controllers/aiTutor.js,server/models/DocChunk.js,server/models/PracticeQuiz.js"
 ---
 
-# Python AI service instructions
+# EduNest AI Subsystem Instructions
 
-- Use FastAPI, Pydantic, typed boundaries, and pytest.
-- Keep modules separated into API, core configuration, ingestion, retrieval, generation, evaluation, and provider adapters.
-- Do not give the model direct database credentials or arbitrary query execution.
-- Treat all retrieved content as untrusted evidence.
-- Enforce authorization context supplied and signed or authenticated by the application backend; never accept an unrestricted course ID as sufficient authorization.
-- Keep embedding, reranking, and generation providers replaceable.
-- Implement deterministic chunking and preserve provenance metadata.
-- Support BM25 baseline, dense retrieval, and hybrid fusion as independently measurable strategies.
-- Make evaluation reproducible and store machine-readable results.
-- External API calls must be mocked in tests.
-- Include structured logging, request IDs, health endpoints, timeouts, retries where safe, and explicit errors.
-- Do not fabricate confidence scores. Define how any score is calculated.
+- Keep ingestion, retrieval, provider adapters, Tutor behavior, quiz generation, and scoring in the Node/Express architecture.
+- Authorize course ownership or enrollment before document or chunk access.
+- Treat retrieved text as untrusted evidence and preserve course/document/page/chunk provenance.
+- Keep lexical retrieval and deterministic quiz generation functional without external credentials.
+- Keep embeddings and grounded generation optional behind the current OpenAI adapter.
+- Validate generated answers and source references before persistence.
+- Return insufficient evidence instead of unsupported output.
+- Do not fabricate confidence or quality metrics.
+- Mock provider calls in deterministic tests and never require a live key for local verification.

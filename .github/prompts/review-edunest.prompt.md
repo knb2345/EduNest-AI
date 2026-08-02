@@ -1,43 +1,20 @@
 ---
 name: review-edunest
-description: Perform a release-grade security, reliability, and AI evaluation review.
+description: Review EduNest AI for release-level security and regression risk.
 ---
 
-Review the current repository against:
+Review the current diff and product against `../../PROJECT_OVERVIEW.md`, `../../.github/copilot-instructions.md`, and `../../docs/BUILD_STATUS.md`.
 
-- `../../.github/copilot-instructions.md`
-- `../../docs/AI_PRODUCT_SPEC.md`
-- `../../docs/TARGET_ARCHITECTURE.md`
-- `../../docs/ACCEPTANCE_CRITERIA.md`
-- `../../docs/BUILD_STATUS.md`
+Check:
 
-Do not make broad changes before reporting findings.
+- broken identity, course, payment, progress, Tutor, or quiz flows
+- password, OTP, reset, JWT, cookie, CORS, OAuth 2.0, and OpenID Connect flaws
+- unsafe account linking or Google role escalation
+- frontend-only authorization, IDOR, and cross-course/instructor leakage
+- sensitive values in logs, responses, cookies, browser storage, or URLs
+- upload validation, duplicate ingestion, untrusted document handling, and unsafe output rendering
+- evidence retrieved before authorization, unsupported citations, missing abstention, exposed quiz answers, or browser scoring
+- missing configuration, runtime incompatibility, unbounded database work, and misleading documentation
+- tests that do not exercise their claimed boundary
 
-Inspect the current diff and implementation for:
-
-- Broken existing user flows
-- Token exposure or insecure browser storage
-- Cookie, CORS, CSRF, OAuth, OTP, password-reset, and session flaws
-- Frontend-only authorization
-- IDOR and cross-course/cross-instructor data leakage
-- Unsafe account linking
-- File-upload validation and path traversal
-- Queue duplication, retry storms, and non-idempotent jobs
-- Prompt injection and tool authorization bypass
-- Retrieval filters applied after rather than before evidence access
-- Unsupported citations, hallucination, and missing abstention
-- Evaluation leakage, unstable fixtures, and invented metrics
-- Sensitive logging
-- Unsanitized AI output
-- Missing rate limits and resource quotas
-- Missing indexes and unbounded database operations
-- Missing environment documentation
-- Tests that do not exercise real boundaries
-
-Run safe available tests, linting, type checks, builds, and the AI evaluation command.
-
-Create `docs/RELEASE_REVIEW.md` with findings grouped by Blocker, High, Medium, and Low severity. Include exact file locations, a concrete failure or exploit scenario, and a recommended fix.
-
-Fix Blocker and High findings caused by the current implementation when the changes are localized and safely verifiable. Re-run verification and update `docs/BUILD_STATUS.md`.
-
-Explicitly state everything that was not verified.
+Run safe focused checks and the frontend build. Return findings ordered by severity with exact file locations, failure scenarios, concrete fixes, and an explicit list of unverified behavior. Do not make broad changes before reporting findings.

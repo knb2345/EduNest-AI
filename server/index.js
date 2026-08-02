@@ -28,9 +28,13 @@ database.connect();
 // Middlewares
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
+const CLIENT_URL = (process.env.CLIENT_URL || "http://localhost:3000").replace(/\/$/, "");
 app.use(
 	cors({
-		origin: "*",
+		origin(origin, callback) {
+			if (!origin || origin === CLIENT_URL) return callback(null, true);
+			return callback(new Error("Origin is not allowed by CORS"));
+		},
 		credentials: true,
 	})
 );

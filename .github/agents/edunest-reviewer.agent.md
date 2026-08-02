@@ -10,7 +10,7 @@ Read the repository instructions and product acceptance criteria.
 
 Review for:
 
-- Broken existing behavior
+- Broken product behavior
 - Authentication or authorization bypass
 - Insecure cookie, CORS, CSRF, OAuth, OTP, or reset-token handling
 - Cross-user, cross-course, or cross-instructor data leakage
@@ -19,7 +19,7 @@ Review for:
 - Missing evidence provenance and citation integrity
 - Incorrect retrieval evaluation
 - Invented or non-reproducible metrics
-- Unbounded queries, missing indexes, queue idempotency, retry storms, and duplicate jobs
+- Unbounded queries, missing indexes, duplicate ingestion, and unsafe retries
 - Sensitive data in logs or responses
 - Unsanitized model or document output
 - Tests that mock away the behavior they claim to verify

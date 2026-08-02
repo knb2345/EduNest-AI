@@ -1,6 +1,6 @@
 {
-  "name": "studynotion-client",
-  "description": "EduNest AI client: adaptive learning with course-grounded AI tutoring",
+  "name": "edunest-ai",
+  "description": "EduNest AI full-stack learning platform with course delivery, grounded tutoring, and practice quizzes",
   "version": "0.1.0",
   "private": true,
   "dependencies": {

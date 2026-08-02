@@ -1,11 +1,14 @@
 const bcrypt = require("bcrypt")
 const User = require("../models/User")
 const OTP = require("../models/OTP")
-const jwt = require("jsonwebtoken")
 const otpGenerator = require("otp-generator")
 const mailSender = require("../utils/mailSender")
 const { passwordUpdated } = require("../mail/templates/passwordUpdate")
 const Profile = require("../models/Profile")
+const {
+  createApplicationToken,
+  setApplicationSessionCookie,
+} = require("../utils/authSession")
 require("dotenv").config()
 
 // Signup Controller for Registering USers
@@ -90,6 +93,8 @@ exports.signup = async (req, res) => {
       firstName,
       lastName,
       email,
+      emailVerified: true,
+      authProvider: "local",
       contactNumber,
       password: hashedPassword,
       accountType: accountType,
@@ -97,6 +102,8 @@ exports.signup = async (req, res) => {
       additionalDetails: profileDetails._id,
       image: "",
     })
+
+    user.password = undefined
 
     return res.status(200).json({
       success: true,
@@ -128,7 +135,10 @@ exports.login = async (req, res) => {
     }
 
     // Find user with provided email
-    const user = await User.findOne({ email }).populate("additionalDetails")
+    const normalizedEmail = String(email).trim().toLowerCase()
+    const user = await User.findOne({ email: normalizedEmail })
+      .select("+password")
+      .populate("additionalDetails")
 
     // If user not found with provided email
     if (!user) {
@@ -139,25 +149,19 @@ exports.login = async (req, res) => {
       })
     }
 
+    if (user.authProvider === "google" || !user.password) {
+      return res.status(409).json({
+        success: false,
+        message: "This account uses Google sign-in. Continue with Google instead.",
+      })
+    }
+
     // Generate JWT token and Compare Password
     if (await bcrypt.compare(password, user.password)) {
-      const token = jwt.sign(
-        { email: user.email, id: user._id, role: user.role },
-        process.env.JWT_SECRET,
-        {
-          expiresIn: "24h",
-        }
-      )
-
-      // Save token to user document in database
-      user.token = token
+      const token = createApplicationToken(user)
       user.password = undefined
-      // Set cookie for token and return success response
-      const options = {
-        expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-        httpOnly: true,
-      }
-      res.cookie("token", token, options).status(200).json({
+      setApplicationSessionCookie(res, token)
+      res.status(200).json({
         success: true,
         token,
         user,
@@ -225,7 +229,14 @@ exports.sendotp = async (req, res) => {
 exports.changePassword = async (req, res) => {
   try {
     // Get user data from req.user
-    const userDetails = await User.findById(req.user.id)
+    const userDetails = await User.findById(req.user.id).select("+password")
+
+    if (!userDetails?.password) {
+      return res.status(400).json({
+        success: false,
+        message: "Password changes are not available for Google sign-in accounts.",
+      })
+    }
 
     // Get old password, new password, and confirm new password from req.body
     const { oldPassword, newPassword } = req.body

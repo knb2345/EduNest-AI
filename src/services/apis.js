@@ -9,7 +9,11 @@ export const endpoints = {
   LOGIN_API: BASE_URL + "/auth/login",
   RESETPASSTOKEN_API: BASE_URL + "/auth/reset-password-token",
   RESETPASSWORD_API: BASE_URL + "/auth/reset-password",
+  LOGOUT_API: BASE_URL + "/auth/logout",
 }
+
+export const GOOGLE_STATUS_API = BASE_URL + "/auth/google/status"
+export const GOOGLE_AUTH_API = BASE_URL + "/auth/google"
 
 // PROFILE ENDPOINTS
 export const profileEndpoints = {

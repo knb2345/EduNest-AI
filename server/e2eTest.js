@@ -30,6 +30,19 @@ async function run() {
     throw new Error("Forbidden token file exists: server/ai_test_info.json");
   }
 
+  const oidcStatusResponse = await axios.get(`${baseUrl}/auth/google/status`);
+  if (!oidcStatusResponse.data.success) {
+    throw new Error("Google OIDC status route failed");
+  }
+  if (
+    !process.env.GOOGLE_CLIENT_ID &&
+    !process.env.GOOGLE_CLIENT_SECRET &&
+    !process.env.GOOGLE_REDIRECT_URI &&
+    oidcStatusResponse.data.enabled !== false
+  ) {
+    throw new Error("Google OIDC should be disabled when credentials are absent");
+  }
+
   const instructorLogin = await login(emails.instructor);
   const studentLogin = await login(emails.student);
   const outsiderLogin = await login(emails.outsider);
@@ -107,6 +120,95 @@ async function run() {
     throw new Error("Unsupported question did not return insufficient evidence");
   }
 
+  const quizGenerateResponse = await axios.post(
+    `${baseUrl}/ai/course/${first._id}/quizzes/generate`,
+    {
+      title: "Demo Evidence Quiz",
+      questionCount: 3,
+      difficulty: "easy",
+      questionTypes: ["short_answer"],
+    },
+    { headers: { Authorization: `Bearer ${instructorLogin.token}` } }
+  );
+  const instructorQuiz = quizGenerateResponse.data.quiz;
+  if (
+    !quizGenerateResponse.data.success ||
+    instructorQuiz.status !== "draft" ||
+    instructorQuiz.questions.length !== 3
+  ) {
+    throw new Error("Instructor quiz draft generation failed");
+  }
+
+  const quizId = instructorQuiz._id;
+  const publishResponse = await axios.post(
+    `${baseUrl}/ai/course/${first._id}/quizzes/${quizId}/publish`,
+    {},
+    { headers: { Authorization: `Bearer ${instructorLogin.token}` } }
+  );
+  if (publishResponse.data.quiz.status !== "published") {
+    throw new Error("Quiz publication failed");
+  }
+
+  const studentQuizResponse = await axios.get(
+    `${baseUrl}/ai/course/${first._id}/quizzes/${quizId}`,
+    { headers: { Authorization: `Bearer ${studentLogin.token}` } }
+  );
+  const studentQuiz = studentQuizResponse.data.quiz;
+  if (
+    studentQuiz.questions.some(
+      (question) =>
+        Object.prototype.hasOwnProperty.call(question, "correctAnswer") ||
+        Object.prototype.hasOwnProperty.call(question, "explanation")
+    )
+  ) {
+    throw new Error("Student quiz exposed answers before submission");
+  }
+
+  const answers = Object.fromEntries(
+    instructorQuiz.questions.map((question) => [
+      String(question._id),
+      question.correctAnswer,
+    ])
+  );
+  const submissionResponse = await axios.post(
+    `${baseUrl}/ai/course/${first._id}/quizzes/${quizId}/submit`,
+    { answers },
+    { headers: { Authorization: `Bearer ${studentLogin.token}` } }
+  );
+  if (
+    submissionResponse.data.score !== 3 ||
+    submissionResponse.data.total !== 3 ||
+    submissionResponse.data.results.some(
+      (result) => !result.isCorrect || !result.explanation || !result.citations.length
+    )
+  ) {
+    throw new Error("Backend quiz scoring, explanations, or citations failed");
+  }
+
+  try {
+    await axios.get(`${baseUrl}/ai/course/${first._id}/quizzes`, {
+      headers: { Authorization: `Bearer ${outsiderLogin.token}` },
+    });
+    throw new Error("Outsider quiz access unexpectedly succeeded");
+  } catch (error) {
+    if (error.response?.status !== 403) throw error;
+  }
+
+  try {
+    await axios.get(`${baseUrl}/ai/course/${second._id}/quizzes/${quizId}`, {
+      headers: { Authorization: `Bearer ${instructorLogin.token}` },
+    });
+    throw new Error("Cross-course quiz access unexpectedly succeeded");
+  } catch (error) {
+    if (error.response?.status !== 404) throw error;
+  }
+
+  const logoutResponse = await axios.post(`${baseUrl}/auth/logout`);
+  const logoutCookies = logoutResponse.headers["set-cookie"] || [];
+  if (!logoutResponse.data.success || !logoutCookies.some((cookie) => cookie.startsWith("token=;"))) {
+    throw new Error("Logout did not clear the application session cookie");
+  }
+
   console.log("Instructor login: verified");
   console.log("Student login: verified");
   console.log("Outsider login: verified");
@@ -120,6 +222,12 @@ async function run() {
       : "No-key source preview with citations: verified"
   );
   console.log("Unsupported question abstention: verified");
+  console.log("OIDC-disabled status route: verified");
+  console.log("Instructor quiz draft and publication: verified");
+  console.log("Student-safe quiz payload: verified");
+  console.log("Backend 3/3 scoring with explanations and citations: verified");
+  console.log("Outsider and cross-course quiz isolation: verified");
+  console.log("Application session cookie logout: verified");
 }
 
 run().catch((error) => {
