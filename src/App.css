@@ -212,7 +212,7 @@ details > summary::-webkit-details-marker {
 
 /* Buttons */
 .yellowButton {
-  @apply cursor-pointer rounded-md bg-yellow-50 px-[20px] py-[8px] font-semibold text-richblack-900;
+  @apply min-h-[40px] cursor-pointer rounded-md bg-yellow-50 px-5 py-2 font-semibold text-richblack-900 transition-colors hover:bg-yellow-25 disabled:cursor-not-allowed disabled:opacity-60;
 }
 
 /* Swiper CSS Starts */
@@ -233,7 +233,7 @@ details > summary::-webkit-details-marker {
 /* Swiper CSS Ends */
 
 .blackButton {
-  @apply cursor-pointer rounded-md bg-richblack-800 px-[20px] py-[8px] font-semibold text-richblack-5;
+  @apply min-h-[40px] cursor-pointer rounded-md bg-richblack-800 px-5 py-2 font-semibold text-richblack-5 transition-colors hover:bg-richblack-700 disabled:cursor-not-allowed disabled:opacity-60;
 }
 .lable-style {
   @apply text-[14px] text-richblack-5;

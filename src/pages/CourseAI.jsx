@@ -365,20 +365,20 @@ function CourseAI() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 text-richblack-5">
-      <div className="mb-6 rounded-2xl border border-richblack-700 bg-richblack-800 p-6 shadow-[0_12px_40px_rgba(0,0,0,0.25)]">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 text-richblack-5 sm:py-8">
+      <div className="mb-6 rounded-2xl border border-richblack-700 bg-richblack-800 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.25)] sm:p-6">
         <p className="text-sm uppercase tracking-[0.25em] text-yellow-25">Course AI Tutor</p>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-semibold">Ask questions from course documents</h2>
+            <h2 className="text-2xl font-semibold sm:text-3xl">Ask questions from course documents</h2>
             <p className="mt-2 max-w-2xl text-richblack-300">
               Upload a PDF for the course, then ask a question. Generate a course-grounded practice quiz from the same evidence.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:flex-wrap">
             <button className={activeTab === "tutor" ? "yellowButton" : "blackButton"} onClick={() => setActiveTab("tutor")}>AI Tutor</button>
             <button className={activeTab === "quiz" ? "yellowButton" : "blackButton"} onClick={() => setActiveTab("quiz")}>Practice Quiz</button>
-            <button className="blackButton" onClick={() => navigate(`/courses/${courseId}`)}>Back to course</button>
+            <button className="blackButton col-span-2 sm:col-auto" onClick={() => navigate(`/courses/${courseId}`)}>Back to course</button>
           </div>
         </div>
       </div>
@@ -390,8 +390,8 @@ function CourseAI() {
         <button className="blackButton" onClick={() => quizRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}>Practice quiz section</button>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
-        <section ref={tutorRef} className="rounded-2xl border border-richblack-700 bg-richblack-900 p-6">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <section ref={tutorRef} className="min-w-0 scroll-mt-20 rounded-2xl border border-richblack-700 bg-richblack-900 p-4 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h3 className="text-xl font-semibold">AI Tutor</h3>
@@ -460,7 +460,7 @@ function CourseAI() {
           {lastMode ? <p className="mt-4 text-xs uppercase tracking-[0.2em] text-richblack-400">Last mode: {lastMode}</p> : null}
         </section>
 
-        <section ref={quizRef} className="rounded-2xl border border-richblack-700 bg-richblack-900 p-6">
+        <section ref={quizRef} className="min-w-0 scroll-mt-20 rounded-2xl border border-richblack-700 bg-richblack-900 p-4 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-xl font-semibold">Practice Quiz</h3>

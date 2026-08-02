@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
 import { FcGoogle } from "react-icons/fc"
 
-import { GOOGLE_AUTH_API, GOOGLE_STATUS_API } from "../../../services/apis"
 import { apiConnector } from "../../../services/apiConnector"
+import { GOOGLE_AUTH_API, GOOGLE_STATUS_API } from "../../../services/apis"
 
 export default function GoogleSignIn() {
   const [status, setStatus] = useState("loading")
@@ -33,10 +33,14 @@ export default function GoogleSignIn() {
         type="button"
         disabled={!enabled}
         onClick={() => window.location.assign(GOOGLE_AUTH_API)}
-        className="mt-4 flex w-full items-center justify-center gap-x-2 rounded-[8px] border border-richblack-700 bg-richblack-800 py-[10px] px-[12px] font-medium text-richblack-25 transition hover:bg-richblack-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-4 flex min-h-[44px] w-full items-center justify-center gap-x-3 rounded-lg border border-richblack-600 bg-richblack-800 px-4 py-2.5 font-medium text-richblack-25 transition-colors hover:bg-richblack-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <FcGoogle className="text-xl" />
-        {status === "disabled" ? "Google sign-in unavailable" : "Continue with Google"}
+        <FcGoogle className="shrink-0 text-xl" aria-hidden="true" />
+        <span className="text-center">
+          {status === "disabled"
+            ? "Google sign-in unavailable"
+            : "Continue with Google"}
+        </span>
       </button>
       {status === "disabled" && (
         <p className="mt-2 text-center text-xs text-richblack-300">
