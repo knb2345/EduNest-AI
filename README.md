@@ -2,7 +2,7 @@
 
 EduNest AI is a full-stack learning platform for course delivery, learner progress, payments, course-grounded tutoring, and evidence-backed practice assessment. Students, instructors, and administrators use one React application backed by an Express API and MongoDB.
 
-The platform supports email/password identity with OTP verification and password recovery, Google login through OpenID Connect, JWT application sessions, course authoring and enrollment, optional Razorpay checkout, PDF-grounded AI Tutor responses, and an instructor-reviewed Practice Quiz lifecycle.
+The platform supports email/password identity with OTP verification and password recovery, Google login through OpenID Connect, JWT application sessions, course authoring and enrollment, optional Razorpay checkout, deterministic content-based course recommendations, PDF-grounded AI Tutor responses, and an instructor-reviewed Practice Quiz lifecycle.
 
 ## Product capabilities
 
@@ -42,6 +42,16 @@ Google sign-in never creates an Instructor or Admin. A new verified Google ident
 - Explicit insufficient-evidence responses when course material cannot support a claim
 - Course ownership, enrollment, and course-ID isolation before document access
 
+### Course recommendations
+
+- Protected `GET /api/v1/recommendations/courses?limit=6` student-facing endpoint
+- Weighted TF-IDF-style vectors from course title, description, category, tags, learning outcomes, and instructions
+- A student-interest profile built from enrolled-course vectors, with a bounded progress boost only when lesson count and completion data are reliable
+- Cosine similarity as 93% of personalized score; rating, real enrollment count, and relative recency are bounded tie-breakers
+- Deterministic cold-start ranking from rating, popularity, and relative recency
+- Already-enrolled courses excluded and stable title/ID ordering for exact ties
+- Explanations derived from matched category/tag or actual fallback signals; no LLM-generated reasons
+
 ### Practice Quizzes
 
 - Instructor-only generation from retrieved course evidence
@@ -64,7 +74,7 @@ Google sign-in never creates an Instructor or Admin. A new verified Google ident
 | Data | MongoDB, Mongoose, `mongodb-memory-server` for the local demo |
 | Course media | Cloudinary when configured |
 | Documents | `pdfjs-dist`, SHA-256 hashing, page-aware chunks |
-| Retrieval | Local TF-IDF-style lexical scoring; optional OpenAI embeddings and cosine similarity |
+| Retrieval and ranking | Local TF-IDF-style lexical retrieval and content-based recommendations; optional OpenAI Tutor embeddings |
 | Generation | Deterministic quiz generation; optional grounded OpenAI chat completions |
 | Payments | Optional Razorpay integration |
 
@@ -85,10 +95,12 @@ flowchart TB
   API --> Google
   Authorization --> Learning["Courses + sections + lectures"]
   Authorization --> Enrollment["Enrollment + progress"]
+  Authorization --> Recommend["Content-based course recommendations"]
   Authorization --> Payment["Optional Razorpay payments"]
 
   Learning --> Mongoose["Mongoose models"]
   Enrollment --> Mongoose
+  Recommend --> Mongoose
   Payment --> Mongoose
   Mongoose --> MongoDB["MongoDB"]
 
@@ -143,6 +155,7 @@ Frontend route guards control navigation; Express middleware and course-scoped d
 - Students can read and submit only published quizzes for courses in which they are enrolled.
 - Quiz queries bind both `courseId` and `quizId` to prevent cross-course identifier substitution.
 - Student-facing draft responses omit correct answers and explanations until backend scoring completes.
+- Course recommendations require an authenticated application session and return only aggregate catalog signals, never another user's private data.
 
 ## One-command local demo
 
@@ -168,15 +181,15 @@ npm run demo
 - API: `http://localhost:4000/api/v1`
 - Sample PDF: `sample/edunest_sample.pdf`
 
-The command starts React, Express, an ephemeral in-memory MongoDB instance, seeded identities, two isolated courses, and a generated sample PDF. Email/password, Tutor, and Practice Quiz paths work without Google, OpenAI, Razorpay, Cloudinary, or a local MongoDB installation.
+The command starts React, Express, an ephemeral in-memory MongoDB instance, five development-only identities, an eight-course catalog across four categories, and a generated sample PDF. Email/password, recommendations, Tutor, and Practice Quiz paths work without Google, OpenAI, Razorpay, Cloudinary, or a local MongoDB installation.
 
 All demo users use password `Demo123!`.
 
 | Role | Email | Seeded access |
 |---|---|---|
-| Instructor | `instructor@edunest.demo` | Owns both courses |
-| Enrolled Student | `student@edunest.demo` | Enrolled in the main course |
-| Non-enrolled Student | `outsider@edunest.demo` | Authorization-denial checks |
+| Instructor | `instructor@edunest.demo` | Owns the seeded catalog |
+| Enrolled Student | `student@edunest.demo` | Main-course history and personalized recommendations |
+| New Student | `outsider@edunest.demo` | Cold-start recommendations and enrollment-denial checks |
 
 See [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md) for the end-to-end walkthrough.
 
@@ -224,12 +237,13 @@ Provider credentials are server-only and must not be committed.
 
 ```bash
 node server/authRegressionTest.js
+node server/recommendationTest.js
 npm run build
 cd server
 npm run demo:verify
 ```
 
-The provider-independent authentication test validates disabled configuration, redirect validation, user-model rules, JWT claims, and cookie policies. `demo:verify` exercises email/password login, authorization, PDF ingestion, retrieval, citations, and insufficient-evidence behavior against the running demo.
+The provider-independent authentication test validates disabled configuration, redirect validation, user-model rules, JWT claims, and cookie policies. The recommendation test covers exclusion, lexical ranking, cold start, limit enforcement, malformed metadata, and unauthenticated rejection. `demo:verify` exercises both recommendation profiles plus email/password login, authorization, PDF ingestion, Tutor citations/abstention, and the Practice Quiz lifecycle against the running demo.
 
 ## Current constraints
 
@@ -237,6 +251,7 @@ The provider-independent authentication test validates disabled configuration, r
 - Quiz attempts and historical scores are not persisted.
 - No-key quiz generation supports a bounded set of factual short-answer patterns.
 - Retrieval quality has not been benchmarked.
+- Recommendation quality has no offline relevance benchmark or behavioral-feedback loop; lexical matching cannot infer every semantic relationship.
 - Live OpenAI, Razorpay, email, Cloudinary, and Google authentication require developer-owned credentials.
 - PDF acceptance uses MIME type or filename plus successful parsing; it does not independently inspect the file signature.
 

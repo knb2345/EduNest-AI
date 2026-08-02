@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react"
 import ProgressBar from "@ramonak/react-progress-bar"
 import { AiOutlineRobot } from "react-icons/ai"
-import { BiDotsVerticalRounded } from "react-icons/bi"
 import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 
 import { getUserEnrolledCourses } from "../../../services/operations/profileAPI"
+import RecommendedCourses from "./RecommendedCourses"
 
 export default function EnrolledCourses() {
   const { token } = useSelector((state) => state.auth)
@@ -104,6 +104,7 @@ export default function EnrolledCourses() {
           ))}
         </div>
       )}
+      <RecommendedCourses token={token} />
     </>
   )
 }

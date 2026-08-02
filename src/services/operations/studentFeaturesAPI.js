@@ -10,7 +10,22 @@ const {
   COURSE_PAYMENT_API,
   COURSE_VERIFY_API,
   SEND_PAYMENT_SUCCESS_EMAIL_API,
+  COURSE_RECOMMENDATIONS_API,
 } = studentEndpoints
+
+export async function getCourseRecommendations(token, limit = 6) {
+  const response = await apiConnector(
+    "GET",
+    COURSE_RECOMMENDATIONS_API,
+    null,
+    { Authorization: `Bearer ${token}` },
+    { limit }
+  )
+  if (!response?.data?.success) {
+    throw new Error(response?.data?.message || "Could not fetch recommendations")
+  }
+  return response.data
+}
 
 // Load the Razorpay SDK from the CDN
 function loadScript(src) {
