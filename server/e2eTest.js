@@ -72,6 +72,54 @@ async function run() {
     throw new Error("Demo courses are not isolated records");
   }
 
+  try {
+    await axios.get(`${baseUrl}/recommendations/courses`);
+    throw new Error("Unauthenticated recommendations unexpectedly succeeded");
+  } catch (error) {
+    if (error.response?.status !== 401) throw error;
+  }
+
+  const recommendationResponse = await axios.get(
+    `${baseUrl}/recommendations/courses?limit=6`,
+    { headers: { Authorization: `Bearer ${studentLogin.token}` } }
+  );
+  const recommendations = recommendationResponse.data.recommendations || [];
+  const recommendationNames = recommendations.map((course) => course.courseName);
+  if (
+    !recommendationResponse.data.success ||
+    recommendationResponse.data.coldStart ||
+    recommendations.length === 0 ||
+    recommendationNames.includes("EduNest AI Demo Course")
+  ) {
+    throw new Error("Personalized recommendation response was invalid");
+  }
+  if (
+    recommendationNames.indexOf("Practical Machine Learning") === -1 ||
+    recommendationNames.indexOf("Modern React Interfaces") === -1 ||
+    recommendationNames.indexOf("Practical Machine Learning") >
+      recommendationNames.indexOf("Modern React Interfaces")
+  ) {
+    throw new Error("Similar data-science course did not outrank unrelated React course");
+  }
+  if (!recommendations.every((course) => course.reason)) {
+    throw new Error("Recommendation reason was missing");
+  }
+
+  const coldStartResponse = await axios.get(
+    `${baseUrl}/recommendations/courses?limit=999`,
+    { headers: { Authorization: `Bearer ${outsiderLogin.token}` } }
+  );
+  if (
+    !coldStartResponse.data.coldStart ||
+    coldStartResponse.data.limit !== 12 ||
+    !coldStartResponse.data.recommendations.length ||
+    !coldStartResponse.data.recommendations.every((course) =>
+      course.reason.includes("new students")
+    )
+  ) {
+    throw new Error("Cold-start recommendation fallback was invalid");
+  }
+
   const form = new FormData();
   form.append(
     "file",
@@ -215,6 +263,9 @@ async function run() {
   console.log("First course ownership and enrollment: verified");
   console.log("Outsider non-enrollment: verified");
   console.log("Second course separation: verified");
+  console.log("Protected personalized recommendations with reasons: verified");
+  console.log("Similar-over-unrelated recommendation ranking: verified");
+  console.log("Cold-start recommendations and maximum limit: verified");
   console.log("Token/secret file absence: verified");
   console.log(
     process.env.OPENAI_API_KEY

@@ -8,7 +8,8 @@
 		"dev": "nodemon index.js",
 		"demo": "node devStart.js",
 		"demo:verify": "node e2eTest.js",
-		"auth:verify": "node authRegressionTest.js"
+		"auth:verify": "node authRegressionTest.js",
+		"recommendation:verify": "node recommendationTest.js"
 	},
 	"keywords": [
 		"edunest",

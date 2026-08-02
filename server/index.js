@@ -11,6 +11,7 @@ const courseRoutes = require("./routes/Course");
 const paymentRoutes = require("./routes/Payments");
 const contactUsRoute = require("./routes/Contact");
 const aiRoutes = require("./routes/aiTutor");
+const recommendationRoutes = require("./routes/recommendations");
 const database = require("./config/database");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
@@ -56,6 +57,7 @@ app.use("/api/v1/course", courseRoutes);
 app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/reach", contactUsRoute);
 app.use("/api/v1/ai", aiRoutes);
+app.use("/api/v1/recommendations", recommendationRoutes);
 
 // Testing the server
 app.get("/", (req, res) => {

@@ -49,6 +49,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "server": "cd server && npm run dev",
+    "recommendation:verify": "node server/recommendationTest.js",
     "dev": "concurrently -n \"client,server\" -c \"bgBlue,bgYellow\" \"npm start\" \"npm run server\"",
     "demo": "concurrently -k -n \"client,demo-server\" -c \"bgBlue,bgYellow\" \"react-scripts start\" \"node server/devStart.js\""
   },
