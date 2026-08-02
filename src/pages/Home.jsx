@@ -158,9 +158,8 @@ function Home() {
             </div>
             <div className="flex flex-col items-start gap-10 lg:w-[40%]">
               <div className="text-[16px]">
-                The modern EduNest AI is the dictates its own terms. Today, to
-                be a competitive specialist requires more than professional
-                skills.
+                Modern careers move quickly. Build practical skills, keep
+                learning, and stay ready for what comes next.
               </div>
               <CTAButton active={true} linkto={"/signup"}>
                 <div className="">Learn More</div>
@@ -182,7 +181,7 @@ function Home() {
         <InstructorSection />
 
         {/* Reviws from Other Learner */}
-        <h1 className="text-center text-4xl font-semibold mt-8">
+        <h1 className="mt-8 text-center text-4xl font-semibold">
           Reviews from other learners
         </h1>
         <ReviewSlider />

@@ -1,9 +1,11 @@
 import { useSelector } from "react-redux"
+import { Link } from "react-router-dom"
 
 import frameImg from "../../../assets/Images/frame.png"
+import Brand from "../../Common/Brand"
+import GoogleSignIn from "./GoogleSignIn"
 import LoginForm from "./LoginForm"
 import SignupForm from "./SignupForm"
-import GoogleSignIn from "./GoogleSignIn"
 
 function Template({ title, description1, description2, image, formType }) {
   const { loading } = useSelector((state) => state.auth)
@@ -13,8 +15,15 @@ function Template({ title, description1, description2, image, formType }) {
       {loading ? (
         <div className="spinner"></div>
       ) : (
-        <div className="mx-auto flex w-11/12 max-w-maxContent flex-col-reverse justify-between gap-y-12 py-12 md:flex-row md:gap-y-0 md:gap-x-12">
+        <div className="mx-auto flex w-11/12 max-w-maxContent flex-col-reverse justify-between gap-y-12 py-12 md:flex-row md:gap-x-12 md:gap-y-0">
           <div className="mx-auto w-11/12 max-w-[450px] md:mx-0">
+            <Link
+              to="/"
+              aria-label="EduNest AI home"
+              className="mb-7 inline-flex rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-50"
+            >
+              <Brand size="small" />
+            </Link>
             <h1 className="text-[1.875rem] font-semibold leading-[2.375rem] text-richblack-5">
               {title}
             </h1>

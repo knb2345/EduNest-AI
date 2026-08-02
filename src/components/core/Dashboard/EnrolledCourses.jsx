@@ -46,7 +46,8 @@ export default function EnrolledCourses() {
           {/* TODO: Modify this Empty State */}
         </p>
       ) : (
-        <div className="my-8 text-richblack-5">
+        <div className="my-8 overflow-x-auto text-richblack-5">
+          <div className="min-w-[760px]">
           {/* Headings */}
           <div className="flex rounded-t-lg bg-richblack-500 ">
             <p className="w-[45%] px-5 py-3">Course Name</p>
@@ -102,6 +103,7 @@ export default function EnrolledCourses() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
       <RecommendedCourses token={token} />

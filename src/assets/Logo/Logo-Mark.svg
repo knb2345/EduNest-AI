@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-labelledby="title">
+  <title id="title">EduNest AI mark</title>
+  <defs>
+    <linearGradient id="brand-gradient" x1="6" y1="4" x2="34" y2="36" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#44E4BF" />
+      <stop offset="1" stop-color="#118AB2" />
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#brand-gradient)" />
+  <path d="M9 12.5c4.6 0 8.2 1.3 11 4 2.8-2.7 6.4-4 11-4v15.1c-4.4 0-8 1.1-11 3.4-3-2.3-6.6-3.4-11-3.4V12.5Z" fill="#000814" fill-opacity=".92" />
+  <path d="M20 16.5V31M12.5 16.6c3 .3 5.5 1.2 7.5 2.9m7.5-2.9c-3 .3-5.5 1.2-7.5 2.9" fill="none" stroke="#F1F2FF" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" />
+  <circle cx="31.2" cy="9.2" r="3.2" fill="#FFD60A" stroke="#000814" stroke-width="1.2" />
+</svg>

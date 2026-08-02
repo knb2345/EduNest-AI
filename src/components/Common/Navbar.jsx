@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react"
-import { AiOutlineMenu, AiOutlineShoppingCart } from "react-icons/ai"
+import {
+  AiOutlineClose,
+  AiOutlineMenu,
+  AiOutlineShoppingCart,
+} from "react-icons/ai"
 import { BsChevronDown } from "react-icons/bs"
 import { useSelector } from "react-redux"
 import { Link, matchPath, useLocation } from "react-router-dom"
 
-import logo from "../../assets/Logo/Logo-Full-Light.svg"
 import { NavbarLinks } from "../../data/navbar-links"
 import { apiConnector } from "../../services/apiConnector"
 import { categories } from "../../services/apis"
 import { ACCOUNT_TYPE } from "../../utils/constants"
 import ProfileDropdown from "../core/Auth/ProfileDropdown"
+import Brand from "./Brand"
 
 // const subLinks = [
 //   {
@@ -38,6 +42,8 @@ function Navbar() {
 
   const [subLinks, setSubLinks] = useState([])
   const [loading, setLoading] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false)
 
   useEffect(() => {
     ;(async () => {
@@ -52,6 +58,11 @@ function Navbar() {
     })()
   }, [])
 
+  useEffect(() => {
+    setMobileMenuOpen(false)
+    setMobileCatalogOpen(false)
+  }, [location.pathname])
+
   // console.log("sub links", subLinks)
 
   const matchRoute = (route) => {
@@ -59,15 +70,19 @@ function Navbar() {
   }
 
   return (
-    <div
-      className={`flex h-14 items-center justify-center border-b-[1px] border-b-richblack-700 ${
-        location.pathname !== "/" ? "bg-richblack-800" : ""
-      } transition-all duration-200`}
+    <header
+      className={`relative z-50 flex h-16 items-center justify-center border-b border-b-richblack-700 ${
+        location.pathname !== "/" ? "bg-richblack-800" : "bg-richblack-900/95"
+      } transition-colors duration-200`}
     >
-      <div className="flex w-11/12 max-w-maxContent items-center justify-between">
+      <div className="flex w-11/12 max-w-maxContent items-center justify-between gap-4">
         {/* Logo */}
-        <Link to="/">
-          <img src={logo} alt="EduNest AI Logo" width={160} height={32} loading="lazy" />
+        <Link
+          to="/"
+          aria-label="EduNest AI home"
+          className="shrink-0 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-50"
+        >
+          <Brand />
         </Link>
         {/* Navigation links */}
         <nav className="hidden md:block">
@@ -159,11 +174,131 @@ function Navbar() {
           )}
           {token !== null && <ProfileDropdown />}
         </div>
-        <button className="mr-4 md:hidden">
-          <AiOutlineMenu fontSize={24} fill="#AFB2BF" />
+        <button
+          type="button"
+          className="rounded-md p-2 text-richblack-100 transition-colors hover:bg-richblack-700 hover:text-richblack-5 md:hidden"
+          aria-label={
+            mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"
+          }
+          aria-expanded={mobileMenuOpen}
+          aria-controls="mobile-navigation"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          {mobileMenuOpen ? (
+            <AiOutlineClose fontSize={24} />
+          ) : (
+            <AiOutlineMenu fontSize={24} />
+          )}
         </button>
       </div>
-    </div>
+      {mobileMenuOpen && (
+        <nav
+          id="mobile-navigation"
+          className="absolute inset-x-0 top-full border-b border-richblack-700 bg-richblack-800 px-[4.5%] py-4 shadow-xl md:hidden"
+        >
+          <ul className="mx-auto flex max-w-maxContent flex-col text-richblack-25">
+            {NavbarLinks.map((link) => (
+              <li
+                key={link.title}
+                className="border-b border-richblack-700 last:border-0"
+              >
+                {link.title === "Catalog" ? (
+                  <>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between py-3 text-left"
+                      aria-expanded={mobileCatalogOpen}
+                      onClick={() => setMobileCatalogOpen((open) => !open)}
+                    >
+                      <span>Catalog</span>
+                      <BsChevronDown
+                        className={`transition-transform ${
+                          mobileCatalogOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {mobileCatalogOpen && (
+                      <div className="mb-3 rounded-lg bg-richblack-900 p-2 text-sm">
+                        {loading ? (
+                          <p className="px-3 py-2 text-richblack-300">
+                            Loading courses...
+                          </p>
+                        ) : subLinks?.filter(
+                            (subLink) => subLink?.courses?.length > 0
+                          ).length ? (
+                          subLinks
+                            .filter((subLink) => subLink?.courses?.length > 0)
+                            .map((subLink) => (
+                              <Link
+                                key={subLink._id || subLink.name}
+                                to={`/catalog/${subLink.name
+                                  .split(" ")
+                                  .join("-")
+                                  .toLowerCase()}`}
+                                className="block rounded-md px-3 py-2 hover:bg-richblack-700"
+                              >
+                                {subLink.name}
+                              </Link>
+                            ))
+                        ) : (
+                          <p className="px-3 py-2 text-richblack-300">
+                            No courses found
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    to={link.path}
+                    className={`block py-3 ${
+                      matchRoute(link.path) ? "text-yellow-25" : ""
+                    }`}
+                  >
+                    {link.title}
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+          <div className="mx-auto mt-4 flex max-w-maxContent items-center gap-3">
+            {token === null ? (
+              <>
+                <Link
+                  to="/login"
+                  className="blackButton flex-1 border border-richblack-600 text-center"
+                >
+                  Log in
+                </Link>
+                <Link to="/signup" className="yellowButton flex-1 text-center">
+                  Sign up
+                </Link>
+              </>
+            ) : (
+              <>
+                {user?.accountType !== ACCOUNT_TYPE.INSTRUCTOR && (
+                  <Link
+                    to="/dashboard/cart"
+                    className="blackButton relative flex items-center justify-center gap-2 border border-richblack-600"
+                  >
+                    <AiOutlineShoppingCart className="text-xl" /> Cart
+                    {totalItems > 0 && (
+                      <span className="text-yellow-50">({totalItems})</span>
+                    )}
+                  </Link>
+                )}
+                <Link
+                  to="/dashboard/my-profile"
+                  className="yellowButton flex-1 text-center"
+                >
+                  Dashboard
+                </Link>
+              </>
+            )}
+          </div>
+        </nav>
+      )}
+    </header>
   )
 }
 
