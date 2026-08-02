@@ -2,7 +2,7 @@
 
 ## 60-second product pitch
 
-EduNest AI is a MERN learning platform that covers identity, course authoring, enrollment, payments, content progress, grounded tutoring, and practice assessment. Instructors organize courses into sections and lectures, upload source PDFs, query course evidence, generate and review quiz drafts, and publish assessments. Enrolled students consume lessons, track progress, ask the course-grounded Tutor, submit published quizzes, and receive backend-scored explanations with page citations. The system works deterministically without AI credentials and can optionally use OpenAI embeddings and grounded generation. Security is enforced on the Express API through EduNest JWT sessions, roles, course ownership, enrollment checks, and cross-course query scoping. Identity supports OTP-verified passwords and Google OpenID Connect without unsafe account linking.
+EduNest AI is a MERN learning platform that covers identity, course authoring, enrollment, content-based recommendations, payments, progress, grounded tutoring, and practice assessment. Instructors organize courses and publish assessments. Students receive deterministic unseen-course rankings, consume lessons, ask the course-grounded Tutor, and submit backend-scored quizzes with cited explanations. Recommendations use weighted metadata TF-IDF and cosine similarity, with bounded catalog tie-breakers and a cold-start fallback—there is no collaborative-filtering claim. The product works without AI credentials and can optionally use OpenAI only for grounded Tutor/Quiz paths. Express enforces JWT, role, ownership, enrollment, and course isolation boundaries.
 
 ## Why a single full-stack product?
 
@@ -37,6 +37,12 @@ The retriever selects the embedding path only when compatible vectors exist; oth
 The Tutor returns citations built from the exact chunks used as evidence. Each citation contains document and page provenance. Before response generation, evidence score/coverage checks detect missing or weak support. Unsupported questions return `insufficient_evidence` rather than prompting a model to guess.
 
 This safeguard reduces obvious unsupported output, but no hallucination-reduction percentage is claimed.
+
+## Why content-based recommendations?
+
+The portfolio demo has structured course metadata and enrollment/progress records, but it does not have a large real-user interaction matrix. Collaborative filtering would therefore be an unsupported label. The recommender instead constructs weighted TF-IDF-style vectors from title, category, tags, description, learning outcomes, and instructions. It averages vectors from enrolled courses into a learner profile and ranks unseen published courses by cosine similarity.
+
+Personalized similarity carries 93% of the score. Normalized rating, logarithmic enrollment count, and relative recency occupy the remaining 7%, so a popular unrelated course cannot dominate a relevant one. Reliable progress can boost an enrolled course's profile contribution by at most 35%; no boost is applied when a course has no countable lessons or progress record. New students receive a deterministic 65/25/10 rating/popularity/recency fallback. Exact ties use title then ID, and reasons come from real category/tag/fallback signals rather than an LLM.
 
 ## Duplicate document behavior
 
@@ -75,15 +81,17 @@ These provider-backed operations remain optional so the product can run locally 
 - Lexical retrieval and deterministic generation guarantee no-key behavior; their supported language patterns are intentionally bounded.
 - Embeddings remain in MongoDB chunk records, which is adequate for this product scope but not a scale claim.
 - Quiz attempts are scored but not persisted as attempt history.
+- Recommendations are computed at request time; that is simple and auditable for the demo catalog but not a large-catalog latency claim.
 - Provider discovery is lazy, so missing Google settings never break startup.
 
 ## Verification story
 
-The product has three complementary checks:
+The product has four complementary checks:
 
 1. Backend syntax checks for changed JavaScript.
 2. `authRegressionTest.js` for disabled/configured OIDC settings, user-model rules, JWT claims, and cookie policy without provider credentials.
-3. The seeded demo verification for password login, ownership/enrollment, PDF ingestion, citations, and abstention, plus the React production build for client integration.
+3. `recommendationTest.js` for exclusion, similarity order, cold start, maximum limits, malformed metadata, and unauthenticated rejection.
+4. The seeded demo verification for both recommendation profiles, password login, ownership/enrollment, PDF ingestion, citations, abstention, and Practice Quiz scoring, plus the React production build and browser checks for client integration.
 
 Live Google or OpenAI success must be reported only after valid credentials are used. Code/configuration verification is not the same as a live provider authentication.
 
@@ -95,7 +103,8 @@ Live Google or OpenAI success must be reported only after valid credentials are 
 - No live-provider guarantee without credentials
 - MIME/extension plus parser PDF validation rather than independent signature inspection
 - Local demo data resets on shutdown
+- No recommendation relevance benchmark, implicit-feedback learning, or semantic embedding model
 
 ## Sensible next engineering work
 
-Without changing product scope, the strongest hardening opportunities are focused integration tests with a mock OIDC provider, durable quiz-attempt records, PDF signature validation, labelled retrieval fixtures, and CSP/CSRF review for the final deployment topology.
+Without changing product scope, the strongest hardening opportunities are labelled recommendation/retrieval fixtures, durable quiz-attempt records, focused integration tests with a mock OIDC provider, PDF signature validation, and CSP/CSRF review for the final deployment topology.

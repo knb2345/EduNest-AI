@@ -13,7 +13,9 @@ This ledger limits resume language to repository-backed or reproducibly verified
 | Google tokens are not persisted or used for EduNest authorization | OIDC callback and EduNest JWT session utility |
 | Student, Instructor, and Admin authorization is enforced by middleware | `server/middleware/auth.js` and protected routes |
 | Courses support sections, lectures, enrollment, progress, and optional Razorpay payments | Course, Section, Subsection, CourseProgress, and Payment code |
-| Demo seeds three identities and two courses for ownership/enrollment isolation | `server/devStart.js` |
+| Demo seeds five identities and eight courses across four categories for recommendation and ownership/enrollment scenarios | `server/devStart.js` |
+| Protected course recommendations use weighted metadata TF-IDF, cosine similarity, enrolled-course exclusion, bounded aggregate tie-breakers, deterministic cold start, and signal-derived explanations | Recommendation service/controller/route and dashboard component |
+| Recommendation checks cover exclusion, relevance order, cold start, maximum limits, malformed metadata, and unauthenticated rejection | `server/recommendationTest.js` and `server/e2eTest.js` |
 | PDF chunks retain course, document, and page provenance | `DocChunk` model and Tutor controller |
 | Duplicate course documents use SHA-256 detection | Tutor upload controller |
 | Retrieval supports local lexical scoring and optional embeddings | Retriever and embedding provider |
@@ -27,6 +29,7 @@ This ledger limits resume language to repository-backed or reproducibly verified
 - Production user, course, or revenue counts
 - Latency or throughput improvement
 - Retrieval accuracy, recall, MRR, nDCG, or model accuracy
+- Recommendation accuracy, click-through, conversion, collaborative filtering, or personalization uplift
 - Hallucination-reduction or learning-outcome percentages
 - Production scale, availability, or security certification
 - Live OpenAI, Google, Razorpay, email, or Cloudinary success without credential-backed verification
@@ -36,7 +39,8 @@ This ledger limits resume language to repository-backed or reproducibly verified
 - Built EduNest AI, an end-to-end MERN learning platform spanning OTP-verified identity, JWT sessions, role-based course authoring and enrollment, lecture progress, optional payments, course-grounded tutoring, and instructor-reviewed practice assessments.
 - Engineered Google login with the OAuth 2.0 Authorization Code flow and OpenID Connect, including state, nonce, S256 PKCE, verified ID-token claims, Student-only account creation, unsafe-linking conflict protection, and an HttpOnly EduNest session handoff.
 - Built page-aware PDF ingestion with SHA-256 duplicate prevention, course-scoped MongoDB chunks, lexical and optional embedding retrieval, cited Tutor responses, and explicit insufficient-evidence behavior.
+- Implemented a protected content-based course recommender using transparent weighted TF-IDF metadata vectors, engagement-weighted learner profiles, cosine similarity, enrolled-course exclusion, deterministic cold start, bounded quality tie-breakers, and signal-derived explanations.
 - Engineered an evidence-grounded Practice Quiz lifecycle with deterministic no-key or optional structured LLM generation, instructor draft editing and publication, student-safe delivery, backend scoring, explanations, and document/page citations.
-- Delivered a one-command seeded demo with instructor, enrolled-student, and non-enrolled-student identities plus automated checks for authentication configuration, course isolation, PDF retrieval, citations, and abstention.
+- Delivered a one-command seeded demo with enrolled and cold-start recommendation scenarios plus automated checks for authentication, ranking behavior, course isolation, PDF retrieval, citations, abstention, and quiz scoring.
 
 Before using a bullet, pair it with the latest command results in `docs/BUILD_STATUS.md`. Do not convert code-present provider paths into live-provider claims.

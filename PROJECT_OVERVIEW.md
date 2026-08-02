@@ -6,9 +6,9 @@ EduNest AI combines identity, course commerce and delivery, progress tracking, g
 
 | Boundary | Responsibility |
 |---|---|
-| React application | Navigation, forms, role-aware views, course consumption, Tutor and quiz interaction |
+| React application | Navigation, forms, role-aware views, course consumption, recommendations, Tutor and quiz interaction |
 | Redux state | Authentication marker, profile, cart, course content, and lecture-progress state |
-| Express API | Identity workflows, JWT sessions, authorization, course operations, payment orchestration, ingestion, retrieval, generation, and scoring |
+| Express API | Identity workflows, JWT sessions, authorization, course operations, recommendation ranking, payment orchestration, ingestion, retrieval, generation, and scoring |
 | Mongoose models | Users, profiles, OTPs, courses, sections, lectures, progress, source chunks, and practice quizzes |
 | Optional providers | Google identity, OpenAI generation/embeddings, Razorpay payments, Cloudinary media, and email delivery |
 
@@ -28,12 +28,14 @@ flowchart LR
 
   Policy --> Course["Courses / sections / lectures"]
   Policy --> Progress["Enrollment / progress"]
+  Policy --> Recommend["Content-based recommendations"]
   Policy --> Payments["Optional Razorpay"]
   Policy --> Tutor["AI Tutor"]
   Policy --> Quizzes["Practice Quiz lifecycle"]
 
   Course --> Mongoose["Mongoose"]
   Progress --> Mongoose
+  Recommend --> Mongoose
   Payments --> Mongoose
   Tutor --> Mongoose
   Quizzes --> Mongoose
@@ -55,7 +57,7 @@ flowchart LR
 
 The authentication slice stores signup data, loading state, and either the application bearer JWT used by email/password sessions or a non-secret cookie-session marker used after Google login. The profile slice holds the populated user. Axios sends credentials on every API request so HttpOnly sessions work across the local frontend and API ports.
 
-Service modules organize calls by identity, profile, courses, payments, Tutor, and Practice Quiz. Course AI screens use the same authenticated course ID for retrieval and quiz operations.
+Service modules organize calls by identity, profile, courses, recommendations, payments, Tutor, and Practice Quiz. The enrolled-courses dashboard adds responsive recommendation cards with loading, error, empty, personalized, and new-student states. Course AI screens use the same authenticated course ID for retrieval and quiz operations.
 
 ## Backend composition
 
@@ -63,7 +65,8 @@ Service modules organize calls by identity, profile, courses, payments, Tutor, a
 - `server/controllers/Auth.js` handles OTP-backed registration, password login, and password changes.
 - `server/controllers/googleAuth.js` handles Google OpenID Connect initiation, callback validation, safe persistence, and session issuance.
 - `server/middleware/auth.js` verifies the EduNest JWT, then role middleware resolves the current user from MongoDB.
-- Course, section, lecture, payment, progress, profile, Tutor, and quiz controllers own their domain behavior.
+- Course, section, lecture, payment, progress, profile, recommendation, Tutor, and quiz controllers own their domain behavior.
+- `server/services/courseRecommendationService.js` owns transparent lexical vector construction, ranking, explanations, and database assembly; its weights are exported in one configuration block.
 - `server/ai/` contains PDF parsing, lexical retrieval, embedding and LLM adapters, and deterministic quiz logic.
 
 ## Identity workflows
@@ -107,6 +110,18 @@ Instructors create course metadata, organize sections, add lecture subsections, 
 
 Role middleware limits authoring to instructors and administrative category operations to admins. Course controllers and AI controllers add record-level ownership and enrollment checks.
 
+## Course recommendation data flow
+
+1. `GET /api/v1/recommendations/courses?limit=6` passes the standard JWT middleware.
+2. The service loads the caller's enrolled courses, published unseen courses, aggregate reviews/enrollment counts, and progress records.
+3. Title (3.0), category (2.5), tags (2.0), description (1.0), learning outcomes (0.75), and instructions (0.5) contribute weighted term frequencies. Corpus IDF is `log((N + 1) / (df + 1)) + 1`.
+4. Enrolled vectors form an average interest profile. Reliable progress adds at most a 0.35 multiplier to an enrolled course; empty course structures never receive an artificial boost.
+5. Personalized score is `0.93 × cosine(profile, candidate) + 0.04 × normalized rating + 0.02 × normalized log popularity + 0.01 × relative recency`.
+6. With no enrollments, cold-start score is `0.65 × normalized rating + 0.25 × normalized log popularity + 0.10 × relative recency`.
+7. The service excludes enrolled IDs, applies a maximum limit of 12, breaks exact ties by course title then ID, and returns a reason from the matched category/tag or the actual fallback signal.
+
+This is content-based lexical ranking, not collaborative filtering or a trained model. Reviews, enrollment count, and creation date cannot outweigh meaningful content similarity in personalized mode.
+
 ## AI Tutor data flow
 
 1. An authenticated instructor uploads a PDF for a course they own.
@@ -141,6 +156,7 @@ Quiz lookups bind course and quiz identifiers, enforcing cross-course isolation.
 - `CourseProgress`: completed lecture references per user and course
 - `DocChunk`: course/document/page provenance, text, hash, and optional embedding
 - `PracticeQuiz`: course owner, evidence-backed questions, draft/published status, and timestamps
+- Recommendation ranking adds no new model; it derives a request-time profile from `User.courses`, `Course`, `Category`, `CourseProgress`, and aggregate `RatingAndReview` data.
 
 Provider access tokens and refresh tokens are not persisted.
 
@@ -152,8 +168,10 @@ Provider access tokens and refresh tokens are not persisted.
 - Existing unlinked email: explicit conflict; no automatic linking.
 - Missing OpenAI key or provider failure: lexical retrieval, source preview, and deterministic quiz generation remain available.
 - Weak evidence: Tutor abstains and quiz generation reports insufficient support.
+- No enrollment history: recommendations fall back to deterministic aggregate catalog ranking instead of returning an empty section.
+- Missing or malformed course metadata: safe normalization yields empty tokens and preserves deterministic fallback ordering.
 - Missing Razorpay configuration: paid checkout is unavailable, but course and AI workflows continue.
 
 ## Local verification
 
-`npm run demo` launches React, Express, and seeded in-memory MongoDB with no external AI or identity credentials. `node server/authRegressionTest.js` validates provider-independent authentication behavior. `server/e2eTest.js` verifies password login, ownership/enrollment isolation, PDF ingestion, citations, and abstention against the demo API. The React production build validates frontend compilation and route integration.
+`npm run demo` launches React, Express, and seeded in-memory MongoDB with no external AI or identity credentials. `node server/recommendationTest.js` validates deterministic ranking boundaries, and `node server/authRegressionTest.js` validates provider-independent authentication behavior. `server/e2eTest.js` verifies personalized/cold-start recommendations, password login, ownership/enrollment isolation, PDF ingestion, Tutor citations/abstention, and Practice Quiz scoring against the demo API. The React production build validates frontend compilation and route integration.

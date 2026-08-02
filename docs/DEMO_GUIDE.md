@@ -26,8 +26,8 @@ All accounts use `Demo123!`.
 | Role | Email | Purpose |
 |---|---|---|
 | Instructor | `instructor@edunest.demo` | Course owner, document ingestion, quiz authoring |
-| Enrolled Student | `student@edunest.demo` | Tutor access, published quiz submission |
-| Non-enrolled Student | `outsider@edunest.demo` | Enrollment-denial demonstration |
+| Enrolled Student | `student@edunest.demo` | Personalized recommendations, Tutor access, published quiz submission |
+| New Student | `outsider@edunest.demo` | Cold-start recommendations and enrollment-denial demonstration |
 
 ## 1. Identity and dashboard
 
@@ -39,14 +39,25 @@ All accounts use `Demo123!`.
 
 OTP registration and password reset require configured mail delivery. Google login requires the Google Cloud settings documented in the README; do not claim a live provider check during the deterministic demo.
 
-## 2. Course structure and instructor ownership
+## 2. Course recommendations
+
+1. Sign in as `student@edunest.demo` and open **Enrolled Courses**.
+2. Scroll to **Recommended for You**. Confirm the enrolled **EduNest AI Demo Course** is absent.
+3. Show that **Practical Machine Learning**, **Python for Data Analysis**, and **SQL Analytics Fundamentals** rank ahead of unrelated catalog topics and include category/tag-derived reasons.
+4. Open a recommendation card and confirm navigation to `/courses/<COURSE_ID>`.
+5. Sign in as `outsider@edunest.demo`, return to **Enrolled Courses**, and show the **New-student picks** state with deterministic rating/popularity/recency reasons.
+6. Narrow the browser to a phone-sized viewport and confirm the recommendation grid becomes a single column.
+
+The recommender uses weighted course metadata and cosine similarity. It is content-based ranking, not collaborative filtering, deep learning, or LLM-generated personalization.
+
+## 3. Course structure and instructor ownership
 
 1. Open the instructor's course list.
 2. Show that courses contain sections and lecture subsections and can be managed from instructor routes.
 3. Open `/courses/<COURSE_ID>/ai` for the main demo course.
 4. Note that document upload and quiz-draft actions are owner-only API operations.
 
-## 3. PDF ingestion
+## 4. PDF ingestion
 
 1. Upload `sample/edunest_sample.pdf`.
 2. Confirm the success response and stored-chunk count.
@@ -59,7 +70,7 @@ The fixture states:
 - The demo course contains six learning modules.
 - The final assessment requires a score of 70 percent.
 
-## 4. Course-grounded AI Tutor
+## 5. Course-grounded AI Tutor
 
 Ask:
 
@@ -88,7 +99,7 @@ Expected behavior:
 
 Explain that lexical retrieval is always available. When OpenAI is configured, embeddings can drive retrieval and a grounded LLM can compose the answer; citations still come from persisted chunk provenance.
 
-## 5. Instructor Practice Quiz lifecycle
+## 6. Instructor Practice Quiz lifecycle
 
 1. Open the Practice Quiz panel.
 2. Generate three questions from the uploaded material.
@@ -99,7 +110,7 @@ Explain that lexical retrieval is always available. When OpenAI is configured, e
 
 In no-key mode, generation is deterministic and short-answer based. With OpenAI configured, the API can request structured short-answer and multiple-choice output, then validates it against retrieved evidence before persistence.
 
-## 6. Student submission and backend scoring
+## 7. Student submission and backend scoring
 
 1. Log out; confirm navigation returns home and local session state is cleared.
 2. Sign in as `student@edunest.demo`.
@@ -111,7 +122,7 @@ In no-key mode, generation is deterministic and short-answer based. With OpenAI 
 
 Scoring happens on the API; the browser cannot decide which answers are correct.
 
-## 7. Enrollment and cross-course isolation
+## 8. Enrollment and cross-course isolation
 
 1. Log out and sign in as `outsider@edunest.demo`.
 2. Request the main course Tutor or quiz route.
@@ -120,7 +131,7 @@ Scoring happens on the API; the browser cannot decide which answers are correct.
 
 The second seeded course exists to demonstrate that changing a course or quiz identifier does not cross the course boundary.
 
-## 8. Optional commerce and provider paths
+## 9. Optional commerce and provider paths
 
 When Razorpay is configured, demonstrate payment capture, server verification, and enrollment. When OpenAI is configured, re-upload after restart to create embeddings, then show grounded responses or structured quiz generation. When Google is configured, use the exact local callback URI:
 
@@ -138,12 +149,13 @@ With the demo API running, execute from `server/`:
 npm run demo:verify
 ```
 
-The script checks password login, course seeding, ownership, enrollment, outsider isolation, PDF ingestion, a cited supported response, and insufficient-evidence behavior.
+The script checks password login, course seeding, personalized and cold-start recommendation behavior, ownership, enrollment, outsider isolation, PDF ingestion, a cited supported response, insufficient-evidence behavior, and the Practice Quiz lifecycle.
 
 Run provider-independent authentication checks from the repository root:
 
 ```bash
 node server/authRegressionTest.js
+node server/recommendationTest.js
 ```
 
 ## Stop
