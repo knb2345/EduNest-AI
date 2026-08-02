@@ -123,7 +123,7 @@ async function startDemo() {
     mongod = await MongoMemoryServer.create();
     process.env.MONGODB_URL = mongod.getUri();
     process.env.JWT_SECRET = "edunest-development-demo-secret";
-    process.env.PORT = "4001";
+    process.env.PORT = "4000";
 
     await createSamplePdf();
 
