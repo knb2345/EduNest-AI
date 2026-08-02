@@ -1,64 +1,36 @@
-# EduNest AI resume metrics ledger
+# EduNest AI resume evidence
 
-This file prevents unsupported resume claims.
+This ledger records only facts supported by the repository or the verified local demo. It intentionally contains no production-user, accuracy, latency, scalability, or OpenAI-performance claims.
 
-Copilot must update it only with values produced by reproducible commands or clearly documented application data.
+## Verified implementation facts
 
-## Rules
+| Fact | Evidence |
+|---|---|
+| One command starts the React client, Express API, and in-memory demo database | Root `package.json`: `npm run demo` |
+| Demo runs on frontend port 3000 and backend port 4000 | React default and `server/devStart.js` |
+| Three seeded roles are available | Instructor, enrolled student, and non-enrolled outsider in `server/devStart.js` |
+| Two courses are seeded to demonstrate course isolation | `server/devStart.js` |
+| Sample fixture contains one PDF page and creates one stored chunk | Demo fixture plus verified browser upload result |
+| PDF provenance includes course, document, and page | `server/models/DocChunk.js` and upload controller |
+| Duplicate files are detected with SHA-256 per course | `server/controllers/aiTutor.js` |
+| Retrieval supports local lexical scoring and optional embeddings | `server/ai/retriever.js` and provider adapter |
+| Tutor responses support citations, source preview, grounded LLM mode, and abstention | AI tutor controller and frontend mode handling |
+| Quiz workflow supports draft generation, editing, saving, publishing, student access, and backend scoring | Practice Quiz routes, model, controller, and UI |
+| Verified deterministic demo quiz scored 3/3 through the frontend | Local browser verification on 2026-08-02 |
+| Outsider quiz access returns HTTP 403 | Local browser and direct API verification on 2026-08-02 |
+| Normal frontend production build completes with inherited warnings | `npm run build`, verified on 2026-08-02 |
 
-- Do not replace placeholders with estimates.
-- Record the exact command, dataset or database query, date, and configuration used.
-- Distinguish local benchmark results from production behavior.
-- Do not claim user impact without real users or a controlled study.
-- Do not use words such as improved, reduced, accurate, scalable, or secure without a baseline or defined control.
+## Claims deliberately not made
 
-## Build and scope metrics
+- Number of production users or courses
+- Retrieval accuracy, recall, MRR, or hallucination reduction
+- Latency or throughput improvements
+- Scale or availability guarantees
+- Results from real OpenAI generation
+- Production security certification
 
-| Metric | Value | Evidence command/source | Status |
-|---|---:|---|---|
-| Existing courses used for testing | — | — | Not measured |
-| Test PDF documents | — | — | Not measured |
-| Indexed pages | — | — | Not measured |
-| Indexed chunks | — | — | Not measured |
-| Concepts in mastery graph | — | — | Not measured |
-| Automated tests | — | — | Not measured |
+## Draft resume bullets — review before use
 
-## Retrieval metrics
-
-| Strategy | Recall@5 | Recall@10 | MRR | nDCG@10 | Dataset/version | Command |
-|---|---:|---:|---:|---:|---|---|
-| BM25 | — | — | — | — | — | — |
-| Dense | — | — | — | — | — | — |
-| Hybrid | — | — | — | — | — | — |
-| Hybrid + reranker | — | — | — | — | — | — |
-
-## Generation metrics
-
-| Metric | Value | Evaluation definition | Dataset/version | Command |
-|---|---:|---|---|---|
-| Citation precision | — | — | — | — |
-| Citation completeness | — | — | — | — |
-| Abstention accuracy | — | — | — | — |
-| Grounded-answer pass rate | — | — | — | — |
-| Prompt-injection test pass rate | — | — | — | — |
-
-## System metrics
-
-| Metric | Value | Environment | Load/configuration | Command/source |
-|---|---:|---|---|---|
-| P50 end-to-end latency | — | — | — | — |
-| P95 end-to-end latency | — | — | — | — |
-| P95 retrieval latency | — | — | — | — |
-| P95 ingestion time per page | — | — | — | — |
-| Error rate | — | — | — | — |
-| Cache hit rate | — | — | — | — |
-| Mean tokens per grounded query | — | — | — | — |
-
-## Candidate resume bullets
-
-Do not use these until every bracketed field is measured.
-
-- Built a secure adaptive learning platform using React, Express, MongoDB, Redis, and FastAPI, supporting role-based course management, background document ingestion, source-cited tutoring, and instructor-approved adaptive assessments.
-- Developed hybrid BM25 and dense retrieval across **[documents/pages/chunks]**, improving Recall@5 from **[baseline]** to **[result]** and MRR from **[baseline]** to **[result]** on **[evaluation-set size]** verified questions.
-- Implemented Google OpenID Connect using Authorization Code with PKCE, secure HttpOnly sessions, server-side RBAC, rate limiting, and auditable AI-tool execution.
-- Built an evaluated course-grounded tutor achieving **[citation precision]** citation precision and **[abstention accuracy]** unanswerable-question accuracy with P95 latency of **[latency]**.
+- Extended an existing MERN learning platform with a course-grounded AI Tutor and Practice Quiz workflow, integrating React state management, Express APIs, MongoDB models, JWT authorization, instructor review, publishing, and backend scoring.
+- Built page-aware PDF ingestion with SHA-256 duplicate prevention, course-scoped chunk storage, local lexical retrieval, optional embeddings/grounded LLM answers, insufficient-evidence handling, and document/page citations.
+- Delivered a one-command deterministic no-key demo with seeded instructor, enrolled-student, and outsider roles, including evidence-backed quiz generation and a browser-verified 3/3 submission with explanations and citations.

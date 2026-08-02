@@ -1,15 +1,8 @@
 const Razorpay = require("razorpay");
 
-// exports.instance = new Razorpay({
-// 	key_id: process.env.RAZORPAY_KEY,
-// 	key_secret: process.env.RAZORPAY_SECRET,
-// });
+const keyId = process.env.RAZORPAY_KEY;
+const keySecret = process.env.RAZORPAY_SECRET;
 
-const RAZORPAY_KEY = "rzp_test_fUIZAI25WMgGwi"
-
-const RAZORPAY_SECRET = "o7TBIxOogcPsNQa9pTzsAoYf"
-
-exports.instance = new Razorpay({
-	key_id: RAZORPAY_KEY,
-	key_secret: RAZORPAY_SECRET,
-});
+exports.instance = keyId && keySecret
+	? new Razorpay({ key_id: keyId, key_secret: keySecret })
+	: null;
