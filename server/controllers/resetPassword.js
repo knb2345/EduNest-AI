@@ -12,6 +12,12 @@ exports.resetPasswordToken = async (req, res) => {
         message: `This Email: ${email} is not Registered With Us Enter a Valid Email `,
       })
     }
+    if (user.authProvider === "google") {
+      return res.status(400).json({
+        success: false,
+        message: "This account uses Google sign-in and does not have an EduNest password.",
+      })
+    }
     const token = crypto.randomBytes(20).toString("hex")
 
     const updatedDetails = await User.findOneAndUpdate(
@@ -22,10 +28,8 @@ exports.resetPasswordToken = async (req, res) => {
       },
       { new: true }
     )
-    console.log("DETAILS", updatedDetails)
-
     // const url = `http://localhost:3000/update-password/${token}`
-    const frontendBase = process.env.FRONTEND_BASE_URL || "https://edunest.example";
+    const frontendBase = process.env.CLIENT_URL || process.env.FRONTEND_BASE_URL || "https://edunest.example";
     const url = `${frontendBase.replace(/\/$/, "")}/update-password/${token}`;
 
     await mailSender(
@@ -63,6 +67,12 @@ exports.resetPassword = async (req, res) => {
       return res.json({
         success: false,
         message: "Token is Invalid",
+      })
+    }
+    if (userDetails.authProvider === "google") {
+      return res.status(400).json({
+        success: false,
+        message: "Password reset is not available for Google sign-in accounts.",
       })
     }
     if (!(userDetails.resetPasswordExpires > Date.now())) {

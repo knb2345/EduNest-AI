@@ -20,12 +20,40 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      lowercase: true,
+      unique: true,
+    },
+
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+      required: true,
+    },
+
+    providerSubject: {
+      type: String,
+      required() {
+        return this.authProvider === "google"
+      },
+      unique: true,
+      sparse: true,
+      immutable: true,
+      select: false,
     },
 
     // Define the password field with type String and required
     password: {
       type: String,
-      required: true,
+      required() {
+        return this.authProvider !== "google"
+      },
+      select: false,
     },
     // Define the role field with type String and enum values of "Admin", "Student", or "Visitor"
     accountType: {
@@ -54,9 +82,11 @@ const userSchema = new mongoose.Schema(
     ],
     token: {
       type: String,
+      select: false,
     },
     resetPasswordExpires: {
       type: Date,
+      select: false,
     },
     image: {
       type: String,

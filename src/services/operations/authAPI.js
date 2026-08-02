@@ -5,6 +5,7 @@ import { resetCart } from "../../slices/cartSlice"
 import { setUser } from "../../slices/profileSlice"
 import { apiConnector } from "../apiConnector"
 import { endpoints } from "../apis"
+import { profileEndpoints } from "../apis"
 
 const {
   SENDOTP_API,
@@ -12,7 +13,10 @@ const {
   LOGIN_API,
   RESETPASSTOKEN_API,
   RESETPASSWORD_API,
+  LOGOUT_API,
 } = endpoints
+
+const COOKIE_SESSION_MARKER = "cookie-session"
 
 export function sendOtp(email, navigate) {
   return async (dispatch) => {
@@ -173,13 +177,54 @@ export function resetPassword(password, confirmPassword, token, navigate) {
 }
 
 export function logout(navigate) {
-  return (dispatch) => {
-    dispatch(setToken(null))
-    dispatch(setUser(null))
-    dispatch(resetCart())
-    localStorage.removeItem("token")
-    localStorage.removeItem("user")
-    toast.success("Logged Out")
-    navigate("/")
+  return async (dispatch) => {
+    try {
+      await apiConnector("POST", LOGOUT_API)
+    } catch (_error) {
+      // Local session state is still cleared if the server is unavailable.
+    } finally {
+      dispatch(setToken(null))
+      dispatch(setUser(null))
+      dispatch(resetCart())
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
+      toast.success("Logged Out")
+      navigate("/")
+    }
+  }
+}
+
+export function completeGoogleLogin(navigate, callbackError) {
+  return async (dispatch) => {
+    dispatch(setLoading(true))
+    if (callbackError) {
+      toast.error(callbackError)
+      dispatch(setLoading(false))
+      navigate("/login", { replace: true })
+      return
+    }
+
+    try {
+      const response = await apiConnector(
+        "GET",
+        profileEndpoints.GET_USER_DETAILS_API
+      )
+      if (!response.data.success) throw new Error(response.data.message)
+
+      const user = response.data.data
+      const userImage = user.image
+        ? user.image
+        : `https://api.dicebear.com/5.x/initials/svg?seed=${user.firstName} ${user.lastName}`
+      dispatch(setToken(COOKIE_SESSION_MARKER))
+      dispatch(setUser({ ...user, image: userImage }))
+      localStorage.setItem("token", JSON.stringify(COOKIE_SESSION_MARKER))
+      toast.success("Google sign-in successful")
+      navigate("/dashboard/my-profile", { replace: true })
+    } catch (_error) {
+      toast.error("The EduNest session could not be created. Please sign in again.")
+      navigate("/login", { replace: true })
+    } finally {
+      dispatch(setLoading(false))
+    }
   }
 }

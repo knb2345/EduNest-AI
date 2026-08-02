@@ -26,6 +26,7 @@ import CourseAI from "./pages/CourseAI"
 import Dashboard from "./pages/Dashboard"
 import Error from "./pages/Error"
 import ForgotPassword from "./pages/ForgotPassword"
+import GoogleAuthCallback from "./pages/GoogleAuthCallback"
 // Pages
 import Home from "./pages/Home"
 import Login from "./pages/Login"
@@ -66,6 +67,7 @@ function App() {
           }
         />
         <Route path="catalog/:catalogName" element={<Catalog />} />
+        <Route path="auth/google/callback" element={<GoogleAuthCallback />} />
         {/* Open Route - for Only Non Logged in User */}
         <Route
           path="login"
