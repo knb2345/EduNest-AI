@@ -55,10 +55,16 @@ exports.capturePayment = async (req, res) => {
     receipt: Math.random(Date.now()).toString(),
   }
 
+  if (!instance) {
+    return res.status(503).json({
+      success: false,
+      message: "Payment provider is not configured.",
+    })
+  }
+
   try {
     // Initiate the payment using Razorpay
     const paymentResponse = await instance.orders.create(options)
-    console.log(paymentResponse)
     res.json({
       success: true,
       data: paymentResponse,
