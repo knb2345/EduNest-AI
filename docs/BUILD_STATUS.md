@@ -1,56 +1,31 @@
-# Build Status — EduNest (edtech_babbar)
+# EduNest AI build status
 
-Date: 2026-07-28
+Last verified: 2026-08-02
 
-Phase checklist (statuses: not started, in progress, complete, blocked, unverified)
+## Complete portfolio scope
 
-- Repository audit: complete
-  - Notes: Static code inspection and lightweight checks (`node -v`, `npm -v`) completed. See `docs/REPOSITORY_AUDIT.md`.
+- Page-aware PDF ingestion and deterministic chunking
+- Course-scoped MongoDB chunk storage and duplicate prevention
+- Local lexical retrieval and optional embedding retrieval
+- Source-preview, grounded-answer, citation, and insufficient-evidence modes
+- Course-scoped instructor ownership and student enrollment checks
+- Deterministic and optional structured LLM quiz generation paths
+- Instructor draft/edit/save/publish workflow
+- Student-safe published quiz access and backend scoring
+- Per-question answers, explanations, and citations after submission
+- One-command seeded local demo
 
-- Install dependencies (root `npm install`): complete
-  - Notes: installed 1745 packages; `npm audit` reports 78 vulnerabilities (65 high, 2 critical).
+## Verification status
 
-- Install server dependencies (`cd server && npm install`): complete
-  - Notes: installed 222 packages; `npm audit` reports 11 vulnerabilities (10 high, 1 critical).
+- Normal frontend production build: passes with inherited ESLint and bundle-size warnings
+- Backend AI/quiz JavaScript syntax checks: included in the documentation verification workflow
+- No-key browser demo: instructor publish, enrolled-student 3/3 submission, retry/reopen reset, and outsider 403 verified
+- Real OpenAI generation: not verified; optional provider path is code-present only
 
-- Run tests (`npm test` / server tests): complete (no tests found)
-  - Notes: `react-scripts test` ran; no tests matched the repo patterns. Consider adding unit tests or using `--passWithNoTests` in CI.
+## Known limitations
 
-- Lint / formatting checks: not started
-
-- Client build (`npm run build`): complete (built with warnings)
-  - Notes: `react-scripts build` produced a production bundle with ESLint warnings and generated `build/static/js/main.*.js` and `build/static/css/main.*.css`.
-
-Runtime note
-- The repository root `.nvmrc` specifies Node `v16.18.0`, while the install/build here were executed under Node `v22.18.0`. Because these differ, treat the install/build outputs above as provisional. Re-run `npm install` and `npm run build` after switching to the `.nvmrc` Node version to confirm the development baseline.
-
-- Server dev run (`npm run server` from root or `cd server && npm run dev`): complete
-  - Notes: verified the demo backend on port 4000 with seeded credentials and the AI tutor routes responding at `/api/v1/ai/course/:courseId/...`.
-
-- Security hardening (auth cookie/session migration, CORS, CSRF): not started
-
-- Replace hard-coded payment keys with env-backed config: not started
-
-- OIDC Google sign-in (Auth code + PKCE) implementation: not started
-
-- AI service scaffold (separate authenticated Python service + retrieval test harness): not started
-
-- Integration & acceptance test sweep: not started
-
-How to move phases forward (quick commands)
-- Run full install (root):
-```
-npm install
-```
-- Run server install and start (development):
-```
-cd server
-npm install
-npm run dev
-```
-- Run client build:
-```
-npm run build
-```
-
-If you want, I can now run additional checks (lint, add/execute server tests, or implement targeted code fixes). Tell me which next step to take.
+- Demo data is ephemeral.
+- Quiz attempts are not persisted.
+- No-key quiz generation is limited to factual short-answer patterns.
+- Retrieval quality and provider behavior have not been benchmarked.
+- Existing LMS code has warnings and technical debt outside the AI feature.

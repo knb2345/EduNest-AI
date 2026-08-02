@@ -1,6 +1,6 @@
-# EduNest / StudyNotion Project Overview
+# EduNest AI Project Overview
 
-This repository is a full-stack MERN edtech platform. The frontend is a React single-page app, the backend is an Express API, MongoDB stores the data, and the app uses Redux for client-side state management.
+This repository extends an existing full-stack MERN learning-management foundation. The frontend is a React single-page app, the backend is an Express API, MongoDB stores the data, and the app uses Redux for client-side state management. EduNest AI adds course-grounded document ingestion, retrieval, tutoring, citations, and practice quizzes on top of that foundation.
 
 The project is organized around a few major capabilities:
 
@@ -10,6 +10,7 @@ The project is organized around a few major capabilities:
 - Course browsing, enrollment, course progress, and lecture viewing.
 - Cart and payment flow for purchasing courses.
 - Profile and settings management for updating user details and password.
+- Course-scoped PDF ingestion, retrieval, AI Tutor responses, citations, and instructor-reviewed Practice Quizzes.
 
 ## High-Level Architecture
 
@@ -315,3 +316,5 @@ This project is a full-stack learning platform with:
 - persistent state through Redux and localStorage.
 
 The important takeaway is that the project is not using OAuth. Its data flow is built around React -> Redux thunk/service -> Express API -> MongoDB, with JWT used for authenticated requests.
+
+For the implemented AI architecture and reproducible demo workflow, see [README.md](README.md) and [docs/DEMO_GUIDE.md](docs/DEMO_GUIDE.md).
