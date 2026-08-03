@@ -21,14 +21,23 @@ Last completion pass: 2026-08-03
 
 | Check | Result |
 |---|---|
-| Changed backend JavaScript syntax | Passed in the 2026-08-03 completion pass |
+| All backend JavaScript syntax | Passed for 58 files in the 2026-08-03 Azure preparation pass |
+| Clean root and server lockfile installs | Passed with isolated `npm ci` verification |
+| Server dependency audit | Passed: 0 known vulnerabilities after production dependency updates |
 | Recommendation deterministic regression | Passed: exclusion, relevance order, cold start, max limit, malformed metadata, unauthenticated rejection |
 | Provider-independent authentication regression | Passed: disabled config, redirect config, user rules, JWT claims, cookie policies |
-| Frontend production build | Pending final completion-pass run |
-| Demo startup with Google credentials absent | Pending final completion-pass run |
-| Email/password demo login | Pending final completion-pass run |
-| Tutor upload/retrieval/citations/abstention smoke | Pending final completion-pass run |
-| Practice Quiz regression | Pending final completion-pass run |
+| Frontend production build | Passed with existing lint and bundle-size warnings; production bundle uses same-origin `/api/v1` |
+| Production Express launch and health | Passed with an ephemeral MongoDB-compatible test database; safe `/api/health` response verified |
+| React static serving and direct-route navigation | Passed through Express for `/dashboard/my-profile` |
+| Unknown API behavior | Passed: `/api/v1/unknown-route` returned JSON 404 |
+| Azure proxy and production cookies | Passed: one trusted proxy hop; Secure, HttpOnly, SameSite=Lax session cookie and reliable logout clearing |
+| Missing production database configuration | Passed: clear startup failure without logging `MONGODB_URL` |
+| Production demo auto-seeding protection | Passed: empty production database remained empty |
+| Demo startup with Google credentials absent | Passed on alternate ports because pre-existing local processes occupied 3000/4000 |
+| Email/password demo login | Passed for Instructor, enrolled Student, and outsider accounts |
+| Tutor upload/retrieval/citations/abstention smoke | Passed in deterministic no-key source-preview mode |
+| Practice Quiz regression | Passed: draft, publication, student-safe payload, 3/3 backend scoring, and isolation |
+| Logout cookie clearing | Passed in demo and production cookie smoke checks |
 | Browser verification of Google button/callback UI | Pending final completion-pass run |
 | Browser verification of personalized/cold-start recommendations, navigation, and responsive dashboard | Pending final completion-pass run |
 | Live Google authentication | Not tested; no credentials supplied |
@@ -47,3 +56,4 @@ Provider discovery is lazy. With Google variables blank, the server starts norma
 - Recommendation relevance has no labelled benchmark, behavioral learning, or collaborative-filtering dataset.
 - Live provider paths require developer-owned configuration.
 - PDF validation relies on MIME/filename plus parser success rather than an independent file signature.
+- The root React/Create React App dependency tree reports 32 legacy low/moderate/high npm audit advisories and no critical advisories after updating the directly used Swiper package. The deployable Express server dependency tree reports zero known advisories; broad frontend toolchain migration was outside this production-configuration pass.

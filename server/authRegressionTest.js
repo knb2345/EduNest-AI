@@ -9,10 +9,12 @@ const {
   validateAbsoluteUrl,
 } = require("./config/googleOidc")
 const {
+  applicationCookieBaseOptions,
   applicationCookieOptions,
   createApplicationToken,
 } = require("./utils/authSession")
 const {
+  temporaryCookieBaseOptions,
   temporaryCookieNames,
   temporaryCookieOptions,
 } = require("./controllers/googleAuth")
@@ -118,7 +120,11 @@ try {
 
   process.env.NODE_ENV = "production"
   assert.strictEqual(applicationCookieOptions().secure, true)
+  assert.strictEqual(applicationCookieOptions().sameSite, "lax")
+  assert.strictEqual(applicationCookieOptions().httpOnly, true)
+  assert.strictEqual(applicationCookieBaseOptions().maxAge, undefined)
   assert.strictEqual(temporaryCookieOptions().path, "/")
+  assert.strictEqual(temporaryCookieBaseOptions().maxAge, undefined)
   assert.ok(temporaryCookieNames().state.startsWith("__Host-"))
 
   console.log("OAuth-disabled configuration: verified")

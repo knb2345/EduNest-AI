@@ -1,7 +1,7 @@
 import { toast } from "react-hot-toast"
 
 import { apiConnector } from "../apiConnector"
-const BASE_URL = process.env.REACT_APP_BASE_URL || "http://localhost:4000/api/v1"
+import { BASE_URL } from "../apis"
 
 function buildCourseUrl(courseId, path) {
   return `${BASE_URL}/ai/course/${courseId}${path}`

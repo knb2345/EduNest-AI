@@ -22,19 +22,25 @@ function temporaryCookieNames() {
   }
 }
 
-function temporaryCookieOptions() {
+function temporaryCookieBaseOptions() {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: OIDC_COOKIE_MAX_AGE_MS,
     path: process.env.NODE_ENV === "production" ? "/" : "/api/v1/auth/google",
+  }
+}
+
+function temporaryCookieOptions() {
+  return {
+    ...temporaryCookieBaseOptions(),
+    maxAge: OIDC_COOKIE_MAX_AGE_MS,
   }
 }
 
 function clearTemporaryCookies(res) {
   const names = temporaryCookieNames()
-  const options = temporaryCookieOptions()
+  const options = temporaryCookieBaseOptions()
   for (const name of Object.values(names)) {
     res.clearCookie(name, options)
   }
@@ -220,4 +226,5 @@ exports.googleCallback = async (req, res) => {
 
 exports.findOrCreateGoogleUser = findOrCreateGoogleUser
 exports.temporaryCookieNames = temporaryCookieNames
+exports.temporaryCookieBaseOptions = temporaryCookieBaseOptions
 exports.temporaryCookieOptions = temporaryCookieOptions

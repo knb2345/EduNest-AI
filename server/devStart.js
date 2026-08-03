@@ -366,24 +366,28 @@ async function seedDemoData() {
 
 async function startDemo() {
   let mongod;
+  let server;
   try {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Development demo seeding is disabled in production");
+    }
+
+    process.env.NODE_ENV = "development";
     mongod = await MongoMemoryServer.create();
     process.env.MONGODB_URL = mongod.getUri();
     process.env.JWT_SECRET = "edunest-development-demo-secret";
-    process.env.PORT = "4000";
+    process.env.PORT = process.env.DEMO_API_PORT || "4000";
 
     await createSamplePdf();
 
-    mongoose.connection.once("open", () => {
-      seedDemoData().catch((error) => {
-        console.error("Demo seed failed:", error.message);
-        process.exitCode = 1;
-      });
-    });
-
-    require("./index.js");
+    const { startServer } = require("./index.js");
+    server = await startServer();
+    await seedDemoData();
 
     const shutdown = async () => {
+      if (server) {
+        await new Promise((resolve) => server.close(resolve));
+      }
       await mongoose.disconnect();
       await mongod.stop();
       process.exit(0);
@@ -392,6 +396,8 @@ async function startDemo() {
     process.once("SIGTERM", shutdown);
   } catch (error) {
     console.error("Demo startup failed:", error.message);
+    if (server) await new Promise((resolve) => server.close(resolve));
+    await mongoose.disconnect().catch(() => undefined);
     if (mongod) await mongod.stop();
     process.exit(1);
   }
