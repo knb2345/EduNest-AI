@@ -8,11 +8,20 @@ async function extractPdfPages(buffer) {
   const pdfDocument = await loadingTask.promise;
   const pages = [];
 
-  for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
-    const page = await pdfDocument.getPage(pageNumber);
-    const textContent = await page.getTextContent({ normalizeWhitespace: true });
-    const text = textContent.items.map((item) => item.str).join(" ").replace(/\s+/g, " ").trim();
-    pages.push({ pageNumber, text });
+  try {
+    for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
+      const page = await pdfDocument.getPage(pageNumber);
+      const textContent = await page.getTextContent({ normalizeWhitespace: true });
+      const text = textContent.items.map((item) => item.str).join(" ").replace(/\s+/g, " ").trim();
+      pages.push({ pageNumber, text });
+      page.cleanup();
+    }
+  } finally {
+    if (typeof pdfDocument.destroy === "function") {
+      await pdfDocument.destroy();
+    } else if (typeof loadingTask.destroy === "function") {
+      await loadingTask.destroy();
+    }
   }
 
   return pages;

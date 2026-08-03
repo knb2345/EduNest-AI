@@ -161,7 +161,7 @@ Frontend route guards control navigation; Express middleware and course-scoped d
 
 ### Prerequisites
 
-- Node.js 16.18 or compatible runtime
+- Node.js 22.18 or another compatible Node 22 release (`>=22.13.0 <23`)
 - Root and server dependencies installed once
 
 ```bash
@@ -258,6 +258,7 @@ The provider-independent authentication test validates disabled configuration, r
 ## Documentation
 
 - [Project overview](PROJECT_OVERVIEW.md)
+- [Azure production deployment](docs/AZURE_DEPLOYMENT.md)
 - [Demo guide](docs/DEMO_GUIDE.md)
 - [Interview guide](docs/INTERVIEW_GUIDE.md)
 - [Resume evidence](docs/RESUME_METRICS.md)

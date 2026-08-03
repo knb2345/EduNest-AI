@@ -6,13 +6,19 @@ function isProduction() {
   return process.env.NODE_ENV === "production"
 }
 
-function applicationCookieOptions() {
+function applicationCookieBaseOptions() {
   return {
     httpOnly: true,
     secure: isProduction(),
     sameSite: "lax",
-    maxAge: APPLICATION_SESSION_MAX_AGE_MS,
     path: "/",
+  }
+}
+
+function applicationCookieOptions() {
+  return {
+    ...applicationCookieBaseOptions(),
+    maxAge: APPLICATION_SESSION_MAX_AGE_MS,
   }
 }
 
@@ -37,11 +43,12 @@ function setApplicationSessionCookie(res, token) {
 }
 
 function clearApplicationSessionCookie(res) {
-  res.clearCookie("token", applicationCookieOptions())
+  res.clearCookie("token", applicationCookieBaseOptions())
 }
 
 module.exports = {
   APPLICATION_SESSION_MAX_AGE_MS,
+  applicationCookieBaseOptions,
   applicationCookieOptions,
   clearApplicationSessionCookie,
   createApplicationToken,
